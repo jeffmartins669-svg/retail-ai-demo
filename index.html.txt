@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RetailAI - Smart Demo</title>
+    <title>RetailAI - Gemini Powered Demo</title>
     
     <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="[https://unpkg.com/react@18/umd/react.development.js](https://unpkg.com/react@18/umd/react.development.js)"></script>
+    <script crossorigin src="[https://unpkg.com/react-dom@18/umd/react-dom.development.js](https://unpkg.com/react-dom@18/umd/react-dom.development.js)"></script>
     
     <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
     
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
     
     <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="[https://unpkg.com/@phosphor-icons/web](https://unpkg.com/@phosphor-icons/web)"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
@@ -48,46 +48,64 @@
         function App() {
             // --- STATE ---
             const [messages, setMessages] = useState([
-                { id: 1, sender: 'bot', text: "Karibu! 👋 I'm the Nairobi Fashion AI. You can type or send a Voice Note 🎙️ to order." }
+                { id: 1, sender: 'bot', text: "Karibu! 👋 I'm the Nairobi Fashion AI (Powered by Gemini ✨). Type or send a Voice Note 🎙️ to order." }
             ]);
             const [inputText, setInputText] = useState("");
             const [isTyping, setIsTyping] = useState(false);
             const [activeNode, setActiveNode] = useState(null); 
             const [isRecording, setIsRecording] = useState(false);
+            const [apiKey, setApiKey] = useState("");
+            const [showSettings, setShowSettings] = useState(false);
+            const [adminInsight, setAdminInsight] = useState(null);
+            const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
             
             // Business Data
             const [revenue, setRevenue] = useState(14500);
-            const [inventory, setInventory] = useState({ "Red Dress": 4, "Blue Denim": 12, "Sneakers": 8 });
+            const [inventory, setInventory] = useState({ "Red Dress": 4, "Blue Denim": 12, "Sneakers": 8, "Sun Hat": 5 });
 
             const bottomRef = useRef(null);
 
             useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
 
+            // --- GEMINI API HELPER ---
+            const callGemini = async (prompt) => {
+                if (!apiKey) return null; // Fallback to simulation if no key
+                
+                try {
+                    const response = await fetch(
+                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }]
+                            })
+                        }
+                    );
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (error) {
+                    console.error("Gemini Error:", error);
+                    return null;
+                }
+            };
+
             // --- LOGIC HANDLERS ---
             
-            // 1. Handle Voice Note (Simulated)
             const handleVoiceRecord = async () => {
                 if (isRecording) return;
                 setIsRecording(true);
                 
-                // Simulate recording time
                 setTimeout(() => {
                     setIsRecording(false);
-                    const voiceMsg = { 
-                        id: Date.now(), 
-                        sender: 'user', 
-                        type: 'audio', 
-                        duration: '0:04' 
-                    };
+                    const voiceMsg = { id: Date.now(), sender: 'user', type: 'audio', duration: '0:04' };
                     setMessages(prev => [...prev, voiceMsg]);
                     setIsTyping(true);
-                    
                     // Pass "transcribed" text to logic
                     processLogic("I want that red dress please");
                 }, 2000);
             };
 
-            // 2. Handle Text
             const handleSend = () => {
                 if (!inputText.trim()) return;
                 const userMsg = { id: Date.now(), sender: 'user', text: inputText };
@@ -97,49 +115,114 @@
                 processLogic(userMsg.text);
             };
 
-            // 3. The AI Brain
+            const generateAdminInsight = async () => {
+                setIsGeneratingInsight(true);
+                setActiveNode("gemini_admin");
+                
+                let insight = "";
+                if (apiKey) {
+                    const prompt = `You are a retail business analyst for 'Nairobi Fashion Hub'. 
+                    Current Data: Revenue KES ${revenue}, Inventory: ${JSON.stringify(inventory)}. 
+                    Generate a 2-sentence insight about performance and a stock warning if low. Use emojis.`;
+                    
+                    insight = await callGemini(prompt);
+                }
+                
+                if (!insight) {
+                    // Fallback
+                    await wait(1500);
+                    insight = "📈 Revenue is up 12% today! ⚠️ Stock Alert: Red Dress inventory is low (4 units). Consider restocking before the weekend rush.";
+                }
+                
+                setAdminInsight(insight);
+                setIsGeneratingInsight(false);
+                setActiveNode(null);
+            };
+
+            // 3. The AI Brain (Enhanced with Gemini)
             const processLogic = async (text) => {
                 const lowerText = text.toLowerCase();
                 
-                // TRIGGER: Whisper API (if it was voice)
+                // TRIGGER: Whisper (Simulation)
                 if (text === "I want that red dress please") {
                     setActiveNode("whisper"); 
                     await wait(800);
                 }
 
-                // TRIGGER: OpenAI Intent
-                setActiveNode("openai");
-                await wait(1000);
+                // TRIGGER: Gemini Intent Analysis
+                setActiveNode("gemini");
+                let intentData = null;
 
-                // SCENARIO A: Inventory Check
-                if (lowerText.includes("dress") || lowerText.includes("red")) {
+                if (apiKey) {
+                    // REAL GEMINI CALL
+                    const prompt = `You are a shopping assistant for 'Nairobi Fashion Hub'. 
+                    Inventory keys: ${Object.keys(inventory).join(", ")}.
+                    User says: "${text}".
+                    
+                    Return ONLY a JSON object with these fields:
+                    - intent: 'buy', 'support', or 'unknown'
+                    - item: (string, the product name from inventory if mentioned, else null)
+                    - response: (string, a friendly Kenyan-style reply e.g. using 'Karibu', 'Sawa'. Keep it short.)
+                    `;
+                    
+                    const rawResponse = await callGemini(prompt);
+                    try {
+                        // Clean up markdown if Gemini adds it
+                        const jsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '');
+                        intentData = JSON.parse(jsonStr);
+                    } catch (e) { console.error("JSON Parse Error", e); }
+                }
+
+                await wait(1000); // UI visual delay
+
+                // --- SCENARIO A: Inventory Check (Buy) ---
+                // Uses Gemini detected item OR fallback keyword matching
+                const detectedItem = intentData?.item || (lowerText.includes("dress") ? "Red Dress" : null);
+                
+                if (detectedItem && inventory[detectedItem] !== undefined) {
                     setActiveNode("loyverse");
                     await wait(1000);
                     
-                    if (inventory["Red Dress"] > 0) {
+                    if (inventory[detectedItem] > 0) {
                         setIsTyping(false);
-                        addBotMessage(`I found it! We have ${inventory["Red Dress"]} Red Dresses left (Size M). Price: KES 2,500.`);
                         
-                        // UPSELL LOGIC (Smart AI)
-                        await wait(1000);
+                        // Main Response
+                        const mainMsg = intentData?.response || `I found it! We have ${inventory[detectedItem]} ${detectedItem}es left. Price: KES 2,500.`;
+                        addBotMessage(mainMsg);
+                        
+                        // UPSELL LOGIC (Gemini Powered)
+                        await wait(800);
                         setIsTyping(true);
+                        setActiveNode("gemini_upsell");
+                        
+                        let upsellMsg = "";
+                        if (apiKey) {
+                            const upsellPrompt = `User wants to buy ${detectedItem}. 
+                            Available accessories: Sneakers, Sun Hat, Blue Denim.
+                            Suggest ONE accessory to go with it. Write a 1-sentence sales pitch starting with "💡 Style Tip:".`;
+                            upsellMsg = await callGemini(upsellPrompt);
+                        }
+                        
+                        if (!upsellMsg) {
+                            upsellMsg = "💡 Style Tip: These White Sneakers go perfectly with the red dress. Want to add them for KES 1,500?";
+                        }
+
                         await wait(1000);
                         setIsTyping(false);
-                        addBotMessage("💡 Style Tip: These White Sneakers go perfectly with the red dress. Want to add them for KES 1,500?");
+                        addBotMessage(upsellMsg);
                     }
                     setActiveNode(null);
                     return;
                 }
 
-                // SCENARIO B: Yes/Buy (Handling the Upsell or Direct Buy)
-                if (lowerText.includes("yes") || lowerText.includes("both") || lowerText.includes("buy")) {
+                // --- SCENARIO B: Yes/Buy ---
+                if (lowerText.includes("yes") || lowerText.includes("both") || lowerText.includes("buy") || intentData?.intent === 'buy') {
                     setIsTyping(false);
                     const total = lowerText.includes("both") ? 4000 : 2500;
                     
                     setActiveNode("paystack");
                     addBotMessage(`Perfect! Total is KES ${total.toLocaleString()}. Triggering M-Pesa prompt now...`);
                     
-                    // Show Payment Card
                     setTimeout(() => {
                         setMessages(prev => [...prev, { 
                             id: Date.now(), 
@@ -153,7 +236,7 @@
 
                 // DEFAULT RESPONSE
                 setIsTyping(false);
-                addBotMessage("I can help you check stock. Try sending a voice note saying 'Do you have a Red Dress?'");
+                addBotMessage(intentData?.response || "I can help you check stock. Try saying 'Do you have a Red Dress?'");
                 setActiveNode(null);
             };
 
@@ -164,7 +247,6 @@
                 setRevenue(prev => prev + amount);
                 setInventory(prev => ({...prev, "Red Dress": prev["Red Dress"] - 1}));
                 
-                // Show Map
                 setActiveNode("uber");
                 await wait(1000);
                 addBotMessage("✅ Payment Received! Dispatching rider...");
@@ -179,8 +261,46 @@
             const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
             return (
-                <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-4 gap-6">
+                <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-4 gap-6 relative">
                     
+                    {/* SETTINGS MODAL */}
+                    {showSettings && (
+                        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                            <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
+                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                    <Icon name="gear" /> Settings
+                                </h3>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Gemini API Key (Optional)</label>
+                                <input 
+                                    type="password" 
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    placeholder="Paste key to enable Real AI..."
+                                    className="w-full border p-2 rounded-lg mb-4 font-mono text-sm"
+                                />
+                                <p className="text-xs text-slate-500 mb-4">
+                                    Without a key, the system runs in "Simulation Mode". Get a key from Google AI Studio.
+                                </p>
+                                <button 
+                                    onClick={() => setShowSettings(false)}
+                                    className="w-full bg-slate-900 text-white py-2 rounded-lg font-bold"
+                                >
+                                    Save & Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* HEADER BUTTONS */}
+                    <div className="absolute top-4 right-4 z-40 flex gap-2">
+                         <button 
+                            onClick={() => setShowSettings(true)}
+                            className="bg-white p-2 rounded-full shadow-md text-slate-600 hover:text-blue-600 transition"
+                        >
+                            <Icon name="gear" className="text-xl" />
+                        </button>
+                    </div>
+
                     {/* LEFT: DASHBOARD (Business View) */}
                     <div className="w-full lg:w-1/3 space-y-4">
                         <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -190,7 +310,7 @@
                                 </h2>
                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">● Live</span>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="bg-blue-50 p-4 rounded-xl">
                                     <div className="text-slate-500 text-xs mb-1">Total Sales</div>
                                     <div className="text-2xl font-bold text-slate-800">KES {revenue.toLocaleString()}</div>
@@ -200,6 +320,25 @@
                                     <div className="text-2xl font-bold text-slate-800">14</div>
                                 </div>
                             </div>
+                            
+                            {/* GEMINI INSIGHT BUTTON */}
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                                        <Icon name="sparkle" className="text-purple-500" /> AI Business Insight
+                                    </span>
+                                    <button 
+                                        onClick={generateAdminInsight}
+                                        disabled={isGeneratingInsight}
+                                        className="text-[10px] bg-white border px-2 py-1 rounded hover:bg-slate-50 disabled:opacity-50"
+                                    >
+                                        {isGeneratingInsight ? "Generating..." : "Generate ✨"}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-slate-600 italic leading-relaxed min-h-[40px]">
+                                    {adminInsight || "Click generate to ask Gemini for a daily summary..."}
+                                </p>
+                            </div>
                         </div>
 
                         {/* Logic Visualizer */}
@@ -207,9 +346,10 @@
                             <h3 className="font-bold text-slate-700 mb-4 text-sm">Automation Engine (Make.com)</h3>
                             <div className="space-y-3">
                                 <LogicItem id="whisper" active={activeNode} icon="microphone" label="Whisper (Audio-to-Text)" color="text-purple-600" bg="bg-purple-50" />
-                                <LogicItem id="openai" active={activeNode} icon="brain" label="GPT-4o Intent" color="text-green-600" bg="bg-green-50" />
+                                <LogicItem id="gemini" active={activeNode} icon="sparkle" label="Gemini (Intent & Logic)" color="text-blue-600" bg="bg-blue-50" />
+                                <LogicItem id="gemini_upsell" active={activeNode} icon="t-shirt" label="Gemini (Style Upsell)" color="text-pink-600" bg="bg-pink-50" />
                                 <LogicItem id="loyverse" active={activeNode} icon="storefront" label="Loyverse Stock" color="text-orange-600" bg="bg-orange-50" />
-                                <LogicItem id="paystack" active={activeNode} icon="credit-card" label="Paystack STK" color="text-blue-600" bg="bg-blue-50" />
+                                <LogicItem id="paystack" active={activeNode} icon="credit-card" label="Paystack STK" color="text-indigo-600" bg="bg-indigo-50" />
                                 <LogicItem id="uber" active={activeNode} icon="moped" label="Uber Direct" color="text-slate-800" bg="bg-slate-100" />
                             </div>
                         </div>
@@ -217,8 +357,10 @@
                         <div className="bg-slate-800 text-slate-400 p-4 rounded-xl text-xs font-mono">
                             <p className="mb-2 text-slate-200 font-bold border-b border-slate-700 pb-1">Real-time Logs</p>
                             {activeNode === 'whisper' && <p className="text-purple-400">> Transcribing audio file...</p>}
-                            {activeNode === 'openai' && <p className="text-green-400">> Identifying upsell opportunity...</p>}
-                            {activeNode === 'paystack_loop' && <p className="text-blue-400">> Waiting for M-Pesa PIN...</p>}
+                            {activeNode === 'gemini' && <p className="text-blue-400 animate-pulse">> Calling Gemini API (Intent)...</p>}
+                            {activeNode === 'gemini_upsell' && <p className="text-pink-400 animate-pulse">> Gemini Generating Style Tip...</p>}
+                            {activeNode === 'gemini_admin' && <p className="text-purple-400 animate-pulse">> Gemini Analyzing Revenue Data...</p>}
+                            {activeNode === 'paystack_loop' && <p className="text-indigo-400">> Waiting for M-Pesa PIN...</p>}
                             {activeNode === 'uber' && <p className="text-white">> Finding nearest rider (2km away)...</p>}
                             {!activeNode && <p>System Idle. Listening for webhooks...</p>}
                         </div>
@@ -233,8 +375,8 @@
                                     <Icon name="robot" className="text-lg" />
                                 </div>
                                 <div>
-                                    <h3 className="font-semibold text-sm">Fashion Hub Bot</h3>
-                                    <p className="text-[10px] opacity-80">Replies instantly</p>
+                                    <h3 className="font-semibold text-sm">Fashion Hub AI</h3>
+                                    <p className="text-[10px] opacity-80">Powered by Gemini ✨</p>
                                 </div>
                                 <div className="ml-auto flex gap-3">
                                     <Icon name="video-camera" />
@@ -243,7 +385,7 @@
                             </div>
 
                             {/* Chat Body */}
-                            <div className="bg-[#efeae2] flex-1 overflow-y-auto phone-screen p-4 space-y-3 bg-opacity-90" style={{backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundBlendMode: 'overlay'}}>
+                            <div className="bg-[#efeae2] flex-1 overflow-y-auto phone-screen p-4 space-y-3 bg-opacity-90" style={{backgroundImage: 'url("[https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png](https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png)")', backgroundBlendMode: 'overlay'}}>
                                 {messages.map(msg => (
                                     <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
                                         {msg.type === 'audio' ? (
@@ -258,7 +400,7 @@
                                                     <div className="text-[10px] text-slate-500">{msg.duration} • 12:42 PM</div>
                                                 </div>
                                                 <div className="w-6 h-6 rounded-full overflow-hidden border border-white">
-                                                   <img src="https://i.pravatar.cc/100?img=33" alt="User" />
+                                                   <img src="[https://i.pravatar.cc/100?img=33](https://i.pravatar.cc/100?img=33)" alt="User" />
                                                 </div>
                                             </div>
                                         ) : msg.type === 'payment_card' ? (
@@ -276,7 +418,6 @@
                                             <div className="bg-white p-0 rounded-lg shadow-sm w-60 overflow-hidden">
                                                 <div className="h-24 bg-blue-50 relative">
                                                     <div className="absolute inset-0 opacity-30" style={{backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '10px 10px'}}></div>
-                                                    {/* Simple CSS Map Path */}
                                                     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 50">
                                                         <path d="M 10 25 Q 50 10 90 25" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="4" />
                                                         <circle cx="90" cy="25" r="3" fill="#ef4444" className="animate-ping" />
@@ -336,16 +477,16 @@
 
                     {/* RIGHT: INFO PANEL */}
                     <div className="w-full lg:w-1/3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
-                        <h2 className="font-bold text-slate-800 mb-4">Why this works in Kenya 🇰🇪</h2>
+                        <h2 className="font-bold text-slate-800 mb-4">Why Gemini? 🇰🇪</h2>
                         <ul className="space-y-4">
-                            <FeaturePoint icon="microphone" color="text-purple-600" title="Voice-First Commerce" desc="70% of WhatsApp users prefer voice notes. We automate them using Whisper API." />
-                            <FeaturePoint icon="trend-up" color="text-green-600" title="AI Upselling" desc="The bot knows that 'Red Dress' goes with 'White Sneakers' and suggests it automatically." />
-                            <FeaturePoint icon="map-pin" color="text-blue-600" title="Trust via Visibility" desc="Customers trust the process when they see a visual map of their delivery." />
+                            <FeaturePoint icon="sparkle" color="text-blue-600" title="Natural Intent" desc="Gemini understands 'I need a fit for a party' without hardcoded keywords." />
+                            <FeaturePoint icon="t-shirt" color="text-pink-600" title="Smart Upselling" desc="It analyzes the cart item and suggests a matching accessory dynamically." />
+                            <FeaturePoint icon="chart-bar" color="text-purple-600" title="Biz Insight" desc="Generates daily business summaries for the owner automatically." />
                         </ul>
                         <div className="mt-6 pt-6 border-t border-slate-100">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Coming Soon</h3>
                             <div className="flex flex-wrap gap-2">
-                                <Badge text="Visual Search" />
+                                <Badge text="Visual Search (Gemini Vision)" />
                                 <Badge text="Auto-Reversals" />
                                 <Badge text="Instagram DM" />
                             </div>
