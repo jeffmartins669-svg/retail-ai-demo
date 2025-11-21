@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Kwa Ntau — Retail Automation Demo</title>
+<title>Kwa Ntau — Interactive Demo (Enhanced)</title>
 
-<!-- Tailwind for quick styling (demo only) -->
+<!-- Tailwind (quick demo styling) -->
 <script src="https://cdn.tailwindcss.com"></script>
-<!-- Chart.js for dashboard charts -->
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -16,448 +16,719 @@
     --steel-700:#525C66; --eco-700:#2F7D47;
     --bg:#f5f7fa;
   }
-  body { background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-  /* small polished touches */
-  .glass { backdrop-filter: blur(4px); background: rgba(255,255,255,0.6); }
-  .kt-logo { display:flex; gap:.5rem; align-items:center; font-weight:700; font-size:1.05rem; color:var(--steel-700); }
-  .kt-icon { width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--primary-500),var(--primary-300)); display:flex;align-items:center;justify-content:center;color:white;font-weight:700; box-shadow:0 6px 20px rgba(34,34,34,0.12); }
+  body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); }
+  .kt-icon { width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--primary-500),var(--primary-300)); display:flex;align-items:center;justify-content:center;color:white;font-weight:700; box-shadow:0 6px 20px rgba(34,34,34,0.12); }
+  .shadow-soft { box-shadow: 0 8px 30px rgba(16,24,40,0.06); }
   .pulse { animation: pulse 2s infinite; }
   @keyframes pulse { 0%{ transform:scale(1);} 50%{ transform:scale(1.03);} 100%{ transform:scale(1);} }
-  .chip { background:#fff;padding:.25rem .5rem;border-radius:999px;border:1px solid #eee;font-size:.8rem; }
-  .shadow-soft { box-shadow: 0 6px 18px rgba(16,24,40,0.06); }
-  /* small responsive tweaks */
-  @media (max-width:1024px){ .lg\\:show { display:none; } }
+  .typing-dot { animation: typing 1.2s infinite ease-in-out both; display:inline-block; width:6px; height:6px; background:#94a3b8; border-radius:50%; margin:0 1px; }
+  @keyframes typing { 0%,80%,100%{ transform: scale(0);} 40%{ transform: scale(1);} }
+  .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
+  @keyframes shimmer { 0% { background-position: -150% 0 } 100% { background-position: 150% 0 } }
+  .phone-frame { width: 360px; height: 720px; border-radius:40px; border: 10px solid #0f1724; overflow:hidden; background:#efeae2; }
+  .badge { font-size: 11px; padding: 4px 8px; border-radius: 999px; background:#F8C883; color:#1f2937; font-weight:600; }
+  .dialog { position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; background: rgba(2,6,23,0.5); z-index:50; }
+  .mini-map { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 10px 10px; }
 </style>
 </head>
 <body class="min-h-screen">
 
-<!-- TOPBAR -->
-<header class="flex items-center justify-between px-6 py-4 bg-white glass border-b">
-  <div class="flex items-center gap-4">
-    <div class="kt-logo">
-      <div class="kt-icon">KN</div>
-      <div>
-        <div class="text-sm">Kwa Ntau</div>
-        <div class="text-xs text-slate-500">Hardware • MaliMali Automation</div>
-      </div>
+<!-- Config: edit these for live integrations -->
+<script>
+  const GOOGLE_SCRIPT_URL = ""; // optional: Google Apps Script POST URL to capture feedback
+  const WHATSAPP_LINK = "https://wa.me/254XXXXXXXX"; // booking link
+  const CALENDLY_URL = ""; // optional
+</script>
+
+<!-- HEADER -->
+<header class="flex items-center justify-between p-4 bg-white border-b shadow-sm sticky top-0 z-40">
+  <div class="flex items-center gap-3">
+    <div class="kt-icon">KN</div>
+    <div>
+      <div class="font-semibold">Kwa Ntau</div>
+      <div class="text-xs text-slate-500">Hardware • MaliMali Automation</div>
     </div>
   </div>
 
-  <div class="flex items-center gap-4">
-    <div class="chip">Demo Mode</div>
-    <button id="themeToggle" class="px-3 py-1 rounded shadow-soft text-sm">Toggle Theme</button>
-    <a id="bookBtn" href="#" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">Book a Call</a>
+  <div class="flex items-center gap-3">
+    <button id="startWalk" class="px-3 py-1 rounded bg-yellow-400 text-sm">Start Walkthrough</button>
+    <button id="onboardBtn" class="px-3 py-1 rounded bg-slate-100 text-sm">Onboard</button>
+    <button id="themeToggle" class="px-3 py-1 rounded bg-slate-100 text-sm">Toggle Phone</button>
+    <a id="bookBtn" href="#" class="px-3 py-1 rounded bg-emerald-600 text-white text-sm">Book a Call</a>
   </div>
 </header>
 
-<!-- MAIN -->
-<main class="p-6 grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+<!-- MAIN LAYOUT -->
+<main class="max-w-7xl mx-auto grid lg:grid-cols-3 gap-6 p-6">
 
-  <!-- LEFT: Interactive Product / Chat -->
+  <!-- LEFT: Chat + Products + Feedback -->
   <section class="col-span-1 space-y-4">
-    <!-- WhatsApp-style Chat Simulation -->
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-lg bg-[#075E54] text-white flex items-center justify-center">🤖</div>
-        <div>
-          <div class="font-semibold">Kwa Ntau Shop Bot</div>
-          <div class="text-xs text-slate-500">Simulated WhatsApp conversation</div>
+    <!-- Phone Preview: Toggle to show/hide -->
+    <div id="phoneWrap" class="bg-white p-4 rounded-2xl shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <div class="font-semibold">Mobile Preview</div>
+        <div class="text-xs text-slate-400">WhatsApp-style demo</div>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="phone-frame" id="phoneFrame">
+          <!-- top header -->
+          <div class="bg-[#075E54] text-white p-3 flex items-center gap-3">
+            <div class="w-10 h-10 bg-white/20 rounded-md flex items-center justify-center">🤖</div>
+            <div>
+              <div class="font-semibold text-sm">Kwa Ntau Bot</div>
+              <div class="text-[11px] opacity-80">Replies instantly</div>
+            </div>
+          </div>
+
+          <div id="mobileChat" class="p-3 overflow-y-auto h-[520px]">
+            <!-- messages -->
+          </div>
+
+          <div class="p-3 bg-[#f0f2f5] flex items-center gap-2">
+            <input id="mobileInput" class="flex-1 px-3 py-2 rounded-full" placeholder="Type a message..." />
+            <button id="mobileSend" class="bg-[#075E54] px-3 py-2 rounded-full text-white">Send</button>
+          </div>
         </div>
-        <div class="ml-auto text-xs text-slate-400">Live preview</div>
       </div>
-
-      <div id="chatArea" class="mt-4 h-64 overflow-y-auto p-3 bg-slate-50 rounded-lg space-y-2" aria-live="polite">
-        <!-- chat messages appear here -->
-      </div>
-
-      <div class="mt-3 flex gap-2">
-        <input id="chatInput" class="flex-1 rounded-full p-3 border" placeholder="Type: e.g., 'Do you have cement?'" />
-        <button id="sendBtn" class="px-4 rounded-full bg-[#075E54] text-white">Send</button>
-        <button id="voiceBtn" class="px-3 rounded-full bg-orange-400 text-white">🎙️</button>
-      </div>
-
-      <div class="mt-3 text-xs text-slate-500">Tip: Try phrases like <span class="font-medium">"stock", "price", "buy", "delivery"</span></div>
     </div>
 
-    <!-- Product Browsing -->
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
+    <!-- Products grid -->
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
       <div class="flex items-center justify-between mb-3">
         <div>
-          <div class="font-semibold">Shop — Hardware & MaliMali</div>
-          <div class="text-xs text-slate-500">Click a product to view details & add to cart</div>
+          <div class="font-semibold">Product Catalog — Hardware & MaliMali</div>
+          <div class="text-xs text-slate-500">Click to view product details</div>
         </div>
-        <div class="text-sm text-slate-500">Cart: <span id="cartCount">0</span></div>
+        <div class="text-xs text-slate-400">Cart: <span id="cartCount">0</span></div>
       </div>
 
-      <div id="productGrid" class="grid grid-cols-2 gap-3">
-        <!-- product cards inserted here -->
+      <div id="productGrid" class="grid grid-cols-2 gap-2">
+        <!-- products -->
       </div>
 
-      <div class="mt-4 flex justify-between items-center">
-        <button id="viewCart" class="px-3 py-2 bg-[#F28F22] text-white rounded">View Cart</button>
-        <div class="text-xs text-slate-500">Demo payments simulated</div>
+      <div class="mt-3 flex justify-between items-center">
+        <div class="text-xs text-slate-500">Demo checkout uses simulated M-Pesa</div>
+        <div class="flex gap-2">
+          <button id="viewCart" class="px-3 py-1 rounded bg-yellow-400">View Cart</button>
+          <button id="clearCart" class="px-3 py-1 rounded bg-slate-100">Clear</button>
+        </div>
       </div>
     </div>
 
-    <!-- Feedback & Feature Voting -->
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
-      <div class="font-semibold mb-2">Collect Feedback</div>
-      <div class="text-sm text-slate-500 mb-3">Ask clients to vote on features and leave comments.</div>
+    <!-- Feedback + Votes -->
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">Feedback & Feature Voting</div>
+        <div class="text-xs text-slate-400">Help us prioritize</div>
+      </div>
 
-      <div class="grid grid-cols-1 gap-2 mb-3">
+      <div class="mt-3 space-y-2">
         <div class="flex items-center justify-between">
           <div>Auto stock alerts</div>
-          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+          <button data-feature="auto" class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
         </div>
         <div class="flex items-center justify-between">
           <div>WhatsApp ordering</div>
-          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+          <button data-feature="whatsapp" class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
         </div>
         <div class="flex items-center justify-between">
           <div>Delivery tracking</div>
-          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+          <button data-feature="delivery" class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
         </div>
       </div>
 
-      <form id="feedbackForm" class="space-y-2">
+      <form id="feedbackForm" class="mt-3 space-y-2">
         <input name="name" placeholder="Your name" class="w-full p-2 border rounded" />
         <input name="shop" placeholder="Shop name" class="w-full p-2 border rounded" />
-        <textarea name="comment" placeholder="Comments or feature requests" rows="3" class="w-full p-2 border rounded"></textarea>
+        <textarea name="comment" placeholder="Comments..." rows="3" class="w-full p-2 border rounded"></textarea>
         <div class="flex gap-2">
-          <button type="submit" class="px-3 py-2 rounded bg-green-600 text-white">Send Feedback</button>
-          <button id="downloadPdf" type="button" class="px-3 py-2 rounded bg-slate-100">Download Brief</button>
+          <button type="submit" class="px-3 py-2 rounded bg-emerald-600 text-white">Send Feedback</button>
+          <button id="exportFeedback" type="button" class="px-3 py-2 rounded bg-slate-100">Export</button>
         </div>
-        <div id="feedbackStatus" class="text-xs text-green-600 mt-1"></div>
+        <div id="feedbackStatus" class="text-xs text-green-600"></div>
       </form>
     </div>
   </section>
 
-  <!-- CENTER: Dashboard Preview (Clickable) -->
+  <!-- CENTER: Dashboard & Automation -->
   <section class="col-span-1 lg:col-span-1 space-y-4">
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
+    <!-- Dashboard -->
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
       <div class="flex items-center justify-between">
         <div>
-          <div class="text-sm font-semibold">Admin Dashboard</div>
-          <div class="text-xs text-slate-500">Overview (click elements to interact)</div>
+          <div class="font-semibold">Admin Dashboard</div>
+          <div class="text-xs text-slate-500">Overview</div>
         </div>
-        <div><span class="chip">Preview</span></div>
+        <div class="flex items-center gap-2">
+          <select id="abMode" class="text-sm p-1 border rounded">
+            <option value="advanced">Advanced</option>
+            <option value="minimal">Minimal</option>
+          </select>
+        </div>
       </div>
 
-      <div class="grid grid-cols-2 gap-3 mt-3">
+      <div id="dashboardArea" class="mt-3 grid grid-cols-2 gap-3">
         <div class="p-3 rounded-lg bg-slate-50">
-          <div class="text-xs text-slate-500">Today Sales</div>
-          <div class="text-xl font-bold">KES <span id="todaySales">14,500</span></div>
+          <div class="text-xs text-slate-500">Today's Sales</div>
+          <div class="text-2xl font-bold">KES <span id="todaySales">14,500</span></div>
         </div>
         <div class="p-3 rounded-lg bg-slate-50">
           <div class="text-xs text-slate-500">Open Orders</div>
-          <div class="text-xl font-bold"><span id="openOrders">3</span></div>
+          <div class="text-2xl font-bold"><span id="openOrders">3</span></div>
+        </div>
+        <div id="topSellerCard" class="p-3 rounded-lg bg-slate-50 col-span-2">
+          <div class="text-xs text-slate-500">Top Selling Items</div>
+          <div id="topSellers" class="mt-1 flex gap-3"></div>
+        </div>
+        <div id="lowStockCard" class="p-3 rounded-lg bg-slate-50 col-span-2">
+          <div class="text-xs text-slate-500">Low Stock Alerts</div>
+          <div id="lowStockList" class="mt-2 space-y-1"></div>
         </div>
       </div>
 
-      <div class="mt-4 h-44">
+      <div class="mt-4 h-40">
         <canvas id="salesChart"></canvas>
-      </div>
-
-      <div class="mt-3">
-        <div class="text-xs text-slate-500 mb-2">Recent Orders</div>
-        <div id="ordersList" class="space-y-2">
-          <!-- orders go here -->
-        </div>
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
+    <!-- Automation diagram -->
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
       <div class="flex items-center justify-between">
-        <div class="text-sm font-semibold">Inventory</div>
-        <div class="text-xs text-slate-500">Manage stock</div>
+        <div class="font-semibold">Automation Flow</div>
+        <div class="text-xs text-slate-400">WhatsApp → GPT → n8n → Inventory → Delivery</div>
       </div>
+      <div class="mt-3">
+        <svg width="100%" height="120" viewBox="0 0 1000 120">
+          <g>
+            <rect id="node1" x="20" y="20" width="140" height="80" rx="8" fill="#fff" stroke="#e6e8eb"></rect>
+            <text x="90" y="55" text-anchor="middle" font-size="12" fill="#333">WhatsApp</text>
+            <rect id="node2" x="190" y="20" width="140" height="80" rx="8" fill="#fff" stroke="#e6e8eb"></rect>
+            <text x="260" y="55" text-anchor="middle" font-size="12" fill="#333">GPT Intent</text>
+            <rect id="node3" x="360" y="20" width="140" height="80" rx="8" fill="#fff" stroke="#e6e8eb"></rect>
+            <text x="430" y="55" text-anchor="middle" font-size="12" fill="#333">n8n / Make</text>
+            <rect id="node4" x="530" y="20" width="140" height="80" rx="8" fill="#fff" stroke="#e6e8eb"></rect>
+            <text x="600" y="55" text-anchor="middle" font-size="12" fill="#333">Inventory</text>
+            <rect id="node5" x="700" y="20" width="140" height="80" rx="8" fill="#fff" stroke="#e6e8eb"></rect>
+            <text x="770" y="55" text-anchor="middle" font-size="12" fill="#333">Delivery</text>
 
-      <div id="inventoryList" class="mt-3 space-y-2">
-        <!-- inventory items -->
+            <!-- arrows -->
+            <path d="M160 60 L190 60" stroke="#cbd5e1" stroke-width="2" />
+            <path d="M330 60 L360 60" stroke="#cbd5e1" stroke-width="2" />
+            <path d="M500 60 L530 60" stroke="#cbd5e1" stroke-width="2" />
+            <path d="M670 60 L700 60" stroke="#cbd5e1" stroke-width="2" />
+          </g>
+        </svg>
+        <div class="text-xs text-slate-500 mt-2">Hover nodes to see details (demo)</div>
       </div>
     </div>
   </section>
 
-  <!-- RIGHT: Details / Cart / Checkout -->
-  <aside class="col-span-1 space-y-4 lg:col-span-1">
-    <div id="panel" class="bg-white rounded-2xl p-4 shadow-soft min-h-[220px]">
-      <div class="font-semibold">Cart & Checkout</div>
+  <!-- RIGHT: Orders / Cart / Profiles -->
+  <aside class="col-span-1 space-y-4">
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">Cart & Checkout</div>
+        <div class="text-xs text-slate-400">Simulated payments</div>
+      </div>
+
       <div id="cartView" class="mt-3 space-y-2 text-sm text-slate-600">
         <div>No items in cart</div>
       </div>
+
       <div class="mt-4 flex gap-2">
-        <button id="checkoutBtn" class="px-3 py-2 bg-[#075E54] text-white rounded">Checkout</button>
-        <button id="clearCart" class="px-3 py-2 bg-slate-100 rounded">Clear</button>
+        <button id="checkoutBtn" class="px-3 py-2 rounded bg-[#075E54] text-white">Checkout (M-Pesa)</button>
+        <button id="simulateMpesa" class="px-3 py-2 rounded bg-slate-100">Simulate Pay</button>
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl p-4 shadow-soft">
-      <div class="font-semibold">Prototype Notes</div>
-      <ul class="text-xs text-slate-500 mt-2 space-y-1">
-        <li>• Click products to add to cart. Try checkout to simulate M-Pesa STK.</li>
-        <li>• Vote + comment to capture customer needs. Votes persist locally (or submit to Google Sheets).</li>
-        <li>• Use "Mark delivered" in orders to simulate fulfillment and see inventory update.</li>
-      </ul>
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">Recent Orders</div>
+        <div class="text-xs text-slate-400">Interactive</div>
+      </div>
+
+      <div id="ordersList" class="mt-3 space-y-2">
+        <!-- orders -->
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-2xl shadow-soft">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">Customers</div>
+        <div class="text-xs text-slate-400">Profiles</div>
+      </div>
+
+      <div id="customersList" class="mt-3 space-y-2">
+        <!-- customer profiles -->
+      </div>
     </div>
   </aside>
+
 </main>
 
-<!-- Simple footer -->
-<footer class="text-center text-xs text-slate-400 py-6">Kwa Ntau Demo • Built for client feedback • Share link with partners</footer>
+<!-- Walkthrough modal -->
+<div id="walkModal" class="hidden dialog">
+  <div class="bg-white rounded-xl p-6 max-w-xl w-full">
+    <div class="flex justify-between items-center">
+      <div class="font-bold">Guided Walkthrough</div>
+      <button id="closeWalk" class="text-slate-500">✕</button>
+    </div>
+    <div id="walkContent" class="mt-4">
+      <!-- steps injected -->
+    </div>
+    <div class="mt-4 flex justify-between">
+      <button id="prevStep" class="px-3 py-1 rounded bg-slate-100">Previous</button>
+      <div class="flex gap-2">
+        <button id="nextStep" class="px-3 py-1 rounded bg-emerald-600 text-white">Next</button>
+        <button id="finishWalk" class="px-3 py-1 rounded bg-slate-100 hidden">Finish</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<!-- Onboarding modal -->
+<div id="onboardModal" class="hidden dialog">
+  <div class="bg-white rounded-xl p-6 max-w-lg w-full">
+    <div class="flex justify-between items-center">
+      <div class="font-bold">Onboarding — Quick Setup</div>
+      <button id="closeOnboard" class="text-slate-500">✕</button>
+    </div>
+    <form id="onboardForm" class="mt-4 space-y-3">
+      <input name="storeName" placeholder="Store name" class="w-full p-2 border rounded" required />
+      <select name="storeType" class="w-full p-2 border rounded">
+        <option>Hardware / General MaliMali</option>
+        <option>Electronics</option>
+        <option>Boutique</option>
+      </select>
+      <div class="flex gap-2">
+        <button type="submit" class="px-3 py-2 bg-emerald-600 text-white rounded">Create Demo Store</button>
+        <button type="button" id="onboardSkip" class="px-3 py-2 bg-slate-100 rounded">Skip</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delivery modal -->
+<div id="deliveryModal" class="hidden dialog">
+  <div class="bg-white rounded-xl p-6 max-w-md w-full">
+    <div class="flex justify-between items-center">
+      <div class="font-bold">Delivery Simulation</div>
+      <button id="closeDelivery" class="text-slate-500">✕</button>
+    </div>
+    <div class="mt-3">
+      <div class="text-sm text-slate-500">Assign a driver to the order and watch tracking updates.</div>
+      <div class="mt-3">
+        <select id="driverSelect" class="w-full p-2 border rounded">
+          <option value="Juma">Juma — 2.1 km</option>
+          <option value="Asha">Asha — 3.4 km</option>
+          <option value="Kibwezi">Kibwezi — 1.8 km</option>
+        </select>
+      </div>
+      <div class="mt-3 flex justify-end">
+        <button id="assignDriver" class="px-3 py-2 bg-emerald-600 text-white rounded">Assign Driver</button>
+      </div>
+      <div id="deliveryStatus" class="mt-3 text-sm text-slate-600"></div>
+    </div>
+  </div>
+</div>
+
+<!-- small inline scripts -->
 <script>
 /* -------------------------
-  Configuration
+  Demo Data (Kenya hardware)
 ----------------------------*/
-const GOOGLE_SCRIPT_URL = ""; // optional: set your Google Apps Script URL to save feedback
-const WHATSAPP_NUMBER = "https://wa.me/254XXXXXXXX"; // set your booking link
-const CALENDLY_URL = ""; // optional
-
-// sample product data
-const products = [
-  { id: 'p-cement', name: 'Cement (50kg)', price: 650, stock: 18, img: '' },
-  { id: 'p-iron', name: 'Roofing Iron Sheet', price: 3200, stock: 6, img: '' },
-  { id: 'p-nails', name: 'Box of Nails', price: 120, stock: 34, img: '' },
-  { id: 'p-basin', name: 'Washing Basin', price: 900, stock: 4, img: '' }
+const sampleProducts = [
+  { id: 'cement50', name: 'Cement 50kg', price: 650, stock: 18, reorder: 10, supplier: 'Industrial Area' },
+  { id: 'roofsheet', name: 'Roofing Iron Sheet', price: 3200, stock: 6, reorder: 4, supplier: 'Gikomba' },
+  { id: 'boxnails', name: 'Box of Nails (kg)', price: 120, stock: 34, reorder: 10, supplier: 'Kariobangi' },
+  { id: 'basin', name: 'Washing Basin', price: 900, stock: 4, reorder: 5, supplier: 'Local market' },
+  { id: 'panga', name: 'Panga (Machete)', price: 350, stock: 12, reorder: 5, supplier: 'Local market' },
+  { id: 'wheelbarrow', name: 'Wheelbarrow', price: 7200, stock: 2, reorder: 1, supplier: 'Industrial supplier' }
 ];
 
-// sample orders (admin view)
-let orders = [
-  { id: 'ord-1', customer: 'Asha • MaliMali', total: 3200, items: ['Roofing Iron Sheet'], status: 'pending' },
-  { id: 'ord-2', customer: 'Juma • Shop', total: 770, items: ['Cement (50kg)', 'Nails'], status: 'pending' },
-  { id: 'ord-3', customer: 'Mary • Contractor', total: 1200, items: ['Washing Basin'], status: 'delivered' }
+let products = JSON.parse(localStorage.getItem('kt_products')) || sampleProducts.map(p => ({...p}));
+let orders = JSON.parse(localStorage.getItem('kt_orders')) || [
+  { id: 'ord-1', customer: 'Asha • MaliMali', total: 3200, items: ['Roofing Iron Sheet'], status: 'pending', created: new Date().toISOString() },
+  { id: 'ord-2', customer: 'Juma • Shop', total: 770, items: ['Cement 50kg', 'Box of Nails (kg)'], status: 'pending', created: new Date().toISOString() },
+  { id: 'ord-3', customer: 'Mary • Contractor', total: 1200, items: ['Washing Basin'], status: 'delivered', created: new Date().toISOString() }
+];
+let customers = JSON.parse(localStorage.getItem('kt_customers')) || [
+  { id: 'c-1', name: 'Asha', phone: '+254700111222', ltv: 14500, notes: 'Bulk cement buyer' },
+  { id: 'c-2', name: 'Juma', phone: '+254700333444', ltv: 7200, notes: 'Prefers credit' },
+  { id: 'c-3', name: 'Mary', phone: '+254700555666', ltv: 1200, notes: '' }
 ];
 
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('kt_cart')) || [];
 
 /* -------------------------
-  Init: render products & dashboard
+  DOM helpers & renders
 ----------------------------*/
+function $q(sel){ return document.querySelector(sel); }
+function $qa(sel){ return Array.from(document.querySelectorAll(sel)); }
+
 function renderProducts(){
-  const grid = document.getElementById('productGrid');
-  grid.innerHTML = '';
-  products.forEach(p=>{
-    const el = document.createElement('div');
-    el.className = 'p-3 bg-white rounded-lg border shadow-sm cursor-pointer';
-    el.innerHTML = `
-      <div class="font-semibold">${p.name}</div>
+  const grid = $q('#productGrid'); grid.innerHTML = '';
+  products.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'p-3 rounded-lg bg-white border cursor-pointer';
+    div.innerHTML = `<div class="font-medium">${p.name}</div>
       <div class="text-xs text-slate-500">KES ${p.price.toLocaleString()}</div>
-      <div class="text-xs mt-2 ${p.stock<5 ? 'text-red-600' : 'text-slate-500'}">Stock: ${p.stock}</div>
-    `;
-    el.onclick = ()=> addToCart(p.id);
-    grid.appendChild(el);
+      <div class="text-xs mt-2 ${p.stock < p.reorder ? 'text-red-600 font-semibold' : 'text-slate-500'}">Stock: ${p.stock}</div>`;
+    div.onclick = ()=> openProductModal(p.id);
+    grid.appendChild(div);
   });
   updateCartCount();
 }
 
+function renderTopSellers(){
+  // mock: top sellers by random or static mapping
+  const target = $q('#topSellers'); target.innerHTML = '';
+  const top = products.slice().sort((a,b)=>b.stock - a.stock).slice(0,3);
+  top.forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'p-2 bg-white rounded-lg border';
+    el.innerHTML = `<div class="font-medium">${p.name}</div><div class="text-xs text-slate-500">KES ${p.price}</div>`;
+    target.appendChild(el);
+  });
+}
+
+function renderLowStock(){
+  const list = $q('#lowStockList'); list.innerHTML = '';
+  products.filter(p=> p.stock <= p.reorder).forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'flex items-center justify-between';
+    el.innerHTML = `<div class="text-sm">${p.name}</div><div class="text-xs text-red-600">Stock ${p.stock} • Reorder ${p.reorder}</div>`;
+    list.appendChild(el);
+  });
+}
+
 function renderOrders(){
-  const list = document.getElementById('ordersList');
-  list.innerHTML = '';
+  const list = $q('#ordersList'); list.innerHTML = '';
   orders.slice().reverse().forEach(o=>{
     const div = document.createElement('div');
-    div.className = 'p-2 rounded-lg bg-slate-50 flex items-center justify-between';
-    div.innerHTML = `<div class="text-sm"><div class="font-medium">${o.customer}</div><div class="text-xs text-slate-500">${o.items.join(', ')}</div></div>
+    div.className = 'p-2 rounded-lg bg-slate-50 flex items-start justify-between';
+    div.innerHTML = `<div>
+        <div class="font-medium">${o.customer}</div>
+        <div class="text-xs text-slate-500">${o.items.join(', ')}</div>
+        <div class="text-xs text-slate-400 mt-1">${new Date(o.created).toLocaleString()}</div>
+      </div>
       <div class="text-right">
         <div class="font-semibold">KES ${o.total}</div>
         <div class="text-xs mt-1">${o.status}</div>
         <div class="mt-2 flex gap-2">
-          ${o.status !== 'delivered' ? `<button class="markBtn px-2 py-1 text-xs bg-green-600 text-white rounded" data-id="${o.id}">Mark delivered</button>` : ''}
-          <button class="viewBtn px-2 py-1 text-xs bg-slate-100 rounded" data-id="${o.id}">View</button>
+          ${o.status !== 'delivered' ? `<button class="markBtn px-2 py-1 bg-emerald-600 text-white rounded text-xs" data-id="${o.id}">Mark delivered</button>` : ''}
+          <button class="viewBtn px-2 py-1 bg-slate-100 rounded text-xs" data-id="${o.id}">View</button>
+          <button class="assignBtn px-2 py-1 bg-yellow-400 rounded text-xs" data-id="${o.id}">Assign</button>
         </div>
       </div>`;
     list.appendChild(div);
   });
-  // attach handlers
-  document.querySelectorAll('.markBtn').forEach(b=>{
-    b.onclick = (e) => { const id = e.target.dataset.id; markDelivered(id); };
-  });
+  $qa('.markBtn').forEach(b=> b.onclick = e=> markDelivered(e.target.dataset.id));
+  $qa('.assignBtn').forEach(b=> b.onclick = e=> openDeliveryModal(e.target.dataset.id));
 }
 
-function renderInventory(){
-  const container = document.getElementById('inventoryList');
-  container.innerHTML = '';
-  products.forEach(p=>{
+function renderCustomers(){
+  const list = $q('#customersList'); list.innerHTML = '';
+  customers.forEach(c=>{
     const div = document.createElement('div');
     div.className = 'p-2 rounded-lg bg-slate-50 flex items-center justify-between';
-    div.innerHTML = `<div class="${p.stock<5 ? 'text-red-600 font-semibold' : ''}">${p.name}</div>
-      <div class="text-xs">
-        <div>Stock: ${p.stock}</div>
-        <div class="mt-1"><button data-id="${p.id}" class="restockBtn px-2 py-1 bg-slate-100 rounded text-xs">+ Restock</button></div>
-      </div>`;
-    container.appendChild(div);
+    div.innerHTML = `<div><div class="font-medium">${c.name}</div><div class="text-xs text-slate-500">${c.phone}</div></div>
+      <div class="text-right"><div class="text-xs">LTV KES ${c.ltv}</div><button class="px-2 py-1 mt-2 text-xs bg-slate-100 rounded viewCust" data-id="${c.id}">View</button></div>`;
+    list.appendChild(div);
   });
-  document.querySelectorAll('.restockBtn').forEach(b=>{
-    b.onclick = (e)=> { const id = e.target.dataset.id; restockItem(id); };
-  });
+  $qa('.viewCust').forEach(b=> b.onclick = e=> viewCustomer(e.target.dataset.id));
+}
+
+function updateCartCount(){
+  $q('#cartCount').textContent = cart.reduce((s,i)=>s+i.qty,0);
+  renderCartView();
 }
 
 /* -------------------------
-  Cart logic
+  Product modal / add to cart
 ----------------------------*/
-function addToCart(id){
+function openProductModal(id){
   const p = products.find(x=>x.id===id);
-  if(!p || p.stock<=0){ alert('Out of stock'); return; }
-  const existing = cart.find(c=>c.id===id);
-  if(existing) existing.qty++;
-  else cart.push({ id:p.id, name:p.name, price:p.price, qty:1 });
-  updateCartView();
-  updateCartCount();
+  if(!p) return;
+  // simple modal using prompt for demo
+  const qty = parseInt(prompt(`Add ${p.name} to cart. Available: ${p.stock}\nQuantity:`,'1'));
+  if(!qty || qty <= 0) return;
+  if(qty > p.stock){ alert('Not enough stock'); return; }
+  addToCart(id, qty);
 }
-function updateCartView(){
-  const view = document.getElementById('cartView');
-  view.innerHTML = '';
-  if(cart.length===0){ view.innerHTML = '<div>No items in cart</div>'; return; }
-  let total=0;
-  cart.forEach(i=>{
-    total += i.price*i.qty;
+
+function addToCart(id, qty=1){
+  const p = products.find(x=>x.id===id);
+  const exist = cart.find(c=> c.id===id);
+  if(exist) exist.qty += qty;
+  else cart.push({ id:p.id, name:p.name, price:p.price, qty });
+  saveState();
+  updateCartCount();
+  appendMobileMessage(`${p.name} added to cart ✔️`, 'bot');
+}
+
+/* -------------------------
+  Cart & Checkout
+----------------------------*/
+function renderCartView(){
+  const view = $q('#cartView'); view.innerHTML = '';
+  if(cart.length === 0){ view.innerHTML = '<div>No items in cart</div>'; return; }
+  let total = 0;
+  cart.forEach(it=>{
+    total += it.price * it.qty;
     const row = document.createElement('div');
     row.className = 'flex items-center justify-between';
-    row.innerHTML = `<div>${i.name} <span class="text-xs text-slate-500">x${i.qty}</span></div><div>KES ${ (i.price*i.qty).toLocaleString() }</div>`;
+    row.innerHTML = `<div>${it.name} <span class="text-xs text-slate-500">x${it.qty}</span></div><div>KES ${ (it.price*it.qty).toLocaleString() }</div>`;
     view.appendChild(row);
   });
-  const totdiv = document.createElement('div');
-  totdiv.className = 'mt-3 flex items-center justify-between font-semibold';
-  totdiv.innerHTML = `<div>Total</div><div>KES ${total.toLocaleString()}</div>`;
-  view.appendChild(totdiv);
+  const tot = document.createElement('div'); tot.className = 'mt-3 flex items-center justify-between font-bold';
+  tot.innerHTML = `<div>Total</div><div>KES ${total.toLocaleString()}</div>`;
+  view.appendChild(tot);
 }
-function updateCartCount(){ document.getElementById('cartCount').textContent = cart.reduce((s,i)=>s+i.qty,0); }
+
+function checkout(){
+  if(cart.length === 0){ alert('Cart empty'); return; }
+  const total = cart.reduce((s,i)=> s + i.price*i.qty, 0);
+  // create mock order
+  const id = 'ord-' + Math.random().toString(36).slice(2,6);
+  const newOrder = { id, customer: 'Demo Customer', total, items: cart.map(i=>i.name), status:'pending', created: new Date().toISOString() };
+  orders.push(newOrder);
+  // reduce stock
+  cart.forEach(it => {
+    const prod = products.find(p => p.id === it.id);
+    if(prod) prod.stock = Math.max(0, prod.stock - it.qty);
+  });
+  cart = [];
+  saveState();
+  renderCartView(); renderOrders(); renderLowStock(); renderProducts(); renderTopSellers(); updateCounts();
+  appendMobileMessage(`Payment request (M-Pesa) for KES ${total} sent. Order ${id} created.`, 'bot');
+  // simulate mpesa prompt
+  setTimeout(()=> simulateMpesa(total, newOrder.id), 700);
+}
+
+function simulateMpesa(amount, orderId){
+  const ok = confirm(`Simulate M-Pesa payment of KES ${amount} for order ${orderId}? Click OK to confirm.`);
+  if(ok){
+    orders = orders.map(o => o.id === orderId ? {...o, status:'delivered'} : o);
+    saveState();
+    renderOrders(); appendMobileMessage('✅ Payment received. Order marked delivered.', 'bot');
+  } else {
+    appendMobileMessage('Payment cancelled (demo).', 'bot');
+  }
+}
 
 /* -------------------------
-  Orders & inventory actions
+  Order & delivery actions
 ----------------------------*/
 function markDelivered(id){
-  orders = orders.map(o=> o.id===id ? {...o, status:'delivered'} : o );
-  // reduce stock for that order (simulate)
-  const ord = orders.find(o=>o.id===id);
-  if(ord){
-    ord.items.forEach(name=>{
-      const prod = products.find(p=>p.name===name);
-      if(prod) prod.stock = Math.max(0, prod.stock - 1);
-    });
-  }
-  renderOrders(); renderInventory(); renderProducts(); updateCounts();
+  orders = orders.map(o => o.id === id ? {...o, status:'delivered'} : o );
+  saveState();
+  renderOrders();
 }
 
-function restockItem(id){
-  const prod = products.find(p=>p.id===id);
-  if(prod){ prod.stock += 10; renderInventory(); renderProducts(); }
+function openDeliveryModal(orderId){
+  $q('#deliveryModal').classList.remove('hidden');
+  $q('#assignDriver').dataset.order = orderId;
 }
 
-/* -------------------------
-  Feedback & votes (local or send)
-----------------------------*/
-function voteFeature(name, button){
-  const votes = JSON.parse(localStorage.getItem('kt_votes')||'{}');
-  votes[name] = (votes[name]||0) + 1;
-  localStorage.setItem('kt_votes', JSON.stringify(votes));
-  button.textContent = 'Voted ✓';
-  button.disabled = true;
-}
-
-async function submitFeedback(form){
-  const data = { name: form.name.value||'Anonymous', shop: form.shop.value||'-', comment: form.comment.value };
-  if(GOOGLE_SCRIPT_URL){
-    const fd = new FormData();
-    fd.append('name', data.name); fd.append('shop', data.shop); fd.append('comment', data.comment);
-    try{
-      await fetch(GOOGLE_SCRIPT_URL, { method:'POST', body:fd });
-      document.getElementById('feedbackStatus').textContent = 'Thanks — feedback sent.';
-    }catch(err){
-      document.getElementById('feedbackStatus').textContent = 'Error sending; saved locally.';
-      saveFeedbackLocal(data);
-    }
-  } else {
-    saveFeedbackLocal(data);
-    document.getElementById('feedbackStatus').textContent = 'Feedback saved locally (no backend configured).';
-  }
-  form.reset();
-  setTimeout(()=>document.getElementById('feedbackStatus').textContent = '',4000);
-}
-function saveFeedbackLocal(data){
-  const arr = JSON.parse(localStorage.getItem('kt_feedback')||'[]');
-  arr.push({...data, ts:new Date().toISOString()});
-  localStorage.setItem('kt_feedback', JSON.stringify(arr));
-}
+$q('#assignDriver').onclick = function(){
+  const orderId = this.dataset.order;
+  const driver = $q('#driverSelect').value;
+  $q('#deliveryStatus').textContent = `Driver ${driver} assigned. ETA 12 mins...`;
+  setTimeout(()=>{
+    $q('#deliveryStatus').textContent = `Driver ${driver} en route — arriving in 8 mins`;
+  }, 2500);
+  setTimeout(()=>{
+    orders = orders.map(o => o.id === orderId ? {...o, status:'delivered'} : o );
+    saveState();
+    renderOrders();
+    $q('#deliveryStatus').textContent = `Delivered by ${driver}.`;
+  }, 7000);
+};
 
 /* -------------------------
-  Chat bot simulation
+  Chat simulation (mobile)
 ----------------------------*/
-function appendChat(text, who='bot'){
-  const area = document.getElementById('chatArea');
+function appendMobileMessage(text, who='bot'){
+  const area = $q('#mobileChat');
   const div = document.createElement('div');
-  div.className = `p-3 rounded-lg ${who==='bot' ? 'bg-white text-slate-800' : 'bg-emerald-100 text-slate-800 ml-auto'}`;
-  div.style.maxWidth = '80%';
+  div.style.maxWidth = '80%'; div.className = `p-2 rounded-lg ${who==='bot' ? 'bg-white text-slate-800' : 'bg-emerald-100 text-slate-800 ml-auto'}`;
   div.textContent = text;
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
 }
-function processChatInput(txt){
-  appendChat(txt,'user');
+
+function processMobileInput(txt){
+  appendMobileMessage(txt, 'user');
+  // Show typing
+  const area = $q('#mobileChat');
+  const tdiv = document.createElement('div'); tdiv.className='p-2 rounded-lg bg-white text-slate-800';
+  tdiv.innerHTML = `<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>`;
+  area.appendChild(tdiv);
+  area.scrollTop = area.scrollHeight;
   setTimeout(()=>{
-    const t = txt.toLowerCase();
-    if(t.includes('stock') || t.includes('do you have')) {
-      // find first matching product
-      const found = products.find(p=> t.includes(p.name.split(' ')[0].toLowerCase()) || p.name.toLowerCase().includes(t.replace('do you have ','').trim()));
-      if(found) appendChat(`Yes — ${found.name} • Price: KES ${found.price} • Stock: ${found.stock}`);
-      else appendChat('I can check stock and reserve items. What product are you looking for?');
-    } else if(t.includes('price')) {
-      appendChat('Tell me which product (e.g., "price of cement") and I will respond.');
-    } else if(t.includes('buy') || t.includes('order')) {
-      appendChat('Great — I can reserve this and send a payment request. Would you like to add to cart? (Try "add cement")');
-    } else if(t.startsWith('add ')) {
-      const q = t.replace('add ','');
-      const prod = products.find(p=>p.name.toLowerCase().includes(q));
-      if(prod){ addToCart(prod.id); appendChat(`${prod.name} added to cart.`); }
-      else appendChat(`Couldn't find "${q}". Try a product name.`);
+    tdiv.remove();
+    const lower = txt.toLowerCase();
+    if(lower.includes('stock') || lower.includes('do you have')) {
+      const found = products.find(p => lower.includes(p.name.split(' ')[0].toLowerCase()) || p.name.toLowerCase().includes(lower.replace('do you have ','').trim()));
+      if(found) appendMobileMessage(`Yes — ${found.name} • Price: KES ${found.price} • Stock: ${found.stock}`);
+      else appendMobileMessage('I can check stock and reserve items. What product are you looking for?');
+    } else if(lower.includes('price')) {
+      appendMobileMessage('Tell me which product (e.g., "price of cement") and I will respond.');
+    } else if(lower.includes('buy') || lower.includes('order') || lower.includes('add')) {
+      // quick add if includes product name
+      const found = products.find(p => lower.includes(p.name.split(' ')[0].toLowerCase()));
+      if(found){ addToCart(found.id, 1); appendMobileMessage(`${found.name} added to cart.`); }
+      else appendMobileMessage('Which item should I add to your cart? Try "add cement"');
+    } else if(lower.includes('track')) {
+      appendMobileMessage('Track: your order is with rider Juma, arriving in 12 mins.');
     } else {
-      appendChat("Demo: I'm a simulation. Try 'stock', 'price', 'buy', or 'add cement'.");
+      appendMobileMessage("Demo bot: Try 'stock', 'price', 'add cement', 'buy roofsheet', or 'track order'.");
     }
-  }, 600);
+  }, 800);
 }
 
 /* -------------------------
-  Checkout simulation
+  Walkthrough (story mode)
 ----------------------------*/
-function checkout(){
-  if(cart.length===0){ alert('Cart empty'); return; }
-  // create a fake order
-  const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
-  const id = 'ord-' + Math.random().toString(36).slice(2,7);
-  const newOrder = { id, customer: 'Demo Customer', total, items: cart.map(i=>i.name), status:'pending' };
-  orders.push(newOrder);
-  // reduce stock immediately for demo
-  cart.forEach(it=>{
-    const p = products.find(x=>x.id===it.id);
-    if(p) p.stock = Math.max(0,p.stock - it.qty);
-  });
-  cart = [];
-  updateCartView(); updateCartCount();
-  renderOrders(); renderInventory(); renderProducts(); updateCounts();
-  appendChat('Payment request sent (simulated). Order created: ' + id);
-  // show a fake MPESA modal (simple)
-  showMpesaPrompt(total, id);
-}
+const walkthroughSteps = [
+  { id:1, title:'Welcome', text:'Imagine you run a small hardware shop. A customer sends a WhatsApp message asking for cement. Watch the flow.' },
+  { id:2, title:'Customer Message', text:'Customer: "Do you have cement?" — the bot checks inventory and replies instantly.' },
+  { id:3, title:'Upsell', text:'The bot suggests nails and a wheelbarrow to increase order value.' },
+  { id:4, title:'Checkout', text:'Customer accepts. The bot sends a simulated M-Pesa prompt and updates the dashboard.' },
+  { id:5, title:'Delivery', text:'A driver is assigned and the delivery is tracked. The order is marked delivered.' },
+  { id:6, title:'Result', text:'Dashboard updates: sales increased and low-stock alerts appear for items that need reordering.' }
+];
 
-function showMpesaPrompt(amount, orderId){
-  const yes = confirm(`Simulate M-Pesa payment of KES ${amount.toLocaleString()} for ${orderId}?\nClick OK to simulate successful payment.`);
-  if(yes){
-    // mark order paid -> delivered for demo
-    orders = orders.map(o=> o.id===orderId ? {...o, status:'delivered'} : o);
-    renderOrders();
-    appendChat('✅ Payment received. Order marked delivered.');
-  } else {
-    appendChat('Payment cancelled (demo).');
+let walkIndex = 0;
+function startWalk(){
+  walkIndex = 0; showWalkStep();
+  $q('#walkModal').classList.remove('hidden');
+}
+function showWalkStep(){
+  const s = walkthroughSteps[walkIndex];
+  $q('#walkContent').innerHTML = `<div class="font-semibold">${s.title}</div><div class="text-sm text-slate-600 mt-2">${s.text}</div>`;
+  $q('#prevStep').disabled = walkIndex === 0;
+  if(walkIndex === walkthroughSteps.length -1){ $q('#nextStep').classList.add('hidden'); $q('#finishWalk').classList.remove('hidden'); } else { $q('#nextStep').classList.remove('hidden'); $q('#finishWalk').classList.add('hidden'); }
+}
+$q('#startWalk').onclick = startWalk;
+$q('#closeWalk').onclick = ()=> $q('#walkModal').classList.add('hidden');
+$q('#nextStep').onclick = ()=> { walkIndex = Math.min(walkIndex+1, walkthroughSteps.length-1); showWalkStep(); triggerWalkActions(walkIndex); };
+$q('#prevStep').onclick = ()=> { walkIndex = Math.max(walkIndex-1,0); showWalkStep(); };
+$q('#finishWalk').onclick = ()=> { $q('#walkModal').classList.add('hidden'); };
+
+/* Play demo actions at certain steps */
+function triggerWalkActions(index){
+  if(index === 1){
+    // simulate customer message and bot reply
+    processMobileInput('Do you have cement?');
+  }
+  if(index === 2){
+    // upsell simulation
+    setTimeout(()=> appendMobileMessage('💡 Suggestion: White nails go well with cement. Add to cart?'), 800);
+  }
+  if(index === 3){
+    setTimeout(()=> addToCart('cement50',1), 1200);
+    setTimeout(()=> checkout(), 1800);
+  }
+  if(index === 4){
+    // assign driver to latest order
+    const last = orders[orders.length-1];
+    if(last) openDeliveryModal(last.id);
   }
 }
 
 /* -------------------------
-  Charts & counts
+  Votes & Feedback (local or Google Script)
 ----------------------------*/
-function initSalesChart(){
-  const ctx = document.getElementById('salesChart');
+$qa('.voteBtn').forEach(btn=>{
+  btn.onclick = () => { const k = btn.dataset.feature; voteFeature(k, btn); };
+});
+function voteFeature(name, btn){
+  const votes = JSON.parse(localStorage.getItem('kt_votes')||'{}');
+  votes[name] = (votes[name]||0) + 1;
+  localStorage.setItem('kt_votes', JSON.stringify(votes));
+  btn.textContent = 'Voted ✓'; btn.disabled = true;
+}
+
+$q('#feedbackForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = { name: form.name.value || 'Anonymous', shop: form.shop.value || '-', comment: form.comment.value || '' };
+  if(GOOGLE_SCRIPT_URL){
+    try{
+      const fd = new FormData(); fd.append('name', data.name); fd.append('shop', data.shop); fd.append('comment', data.comment);
+      await fetch(GOOGLE_SCRIPT_URL, { method:'POST', body: fd });
+      $q('#feedbackStatus').textContent = 'Thanks — saved to Google Sheets.';
+    }catch(err){
+      saveFeedbackLocal(data); $q('#feedbackStatus').textContent = 'Saved locally (error posting).';
+    }
+  } else {
+    saveFeedbackLocal(data); $q('#feedbackStatus').textContent = 'Saved locally (no backend).';
+  }
+  form.reset();
+  setTimeout(()=> $q('#feedbackStatus').textContent = '', 3000);
+};
+
+function saveFeedbackLocal(data){
+  const arr = JSON.parse(localStorage.getItem('kt_feedback')||'[]');
+  arr.push({...data, ts: new Date().toISOString()});
+  localStorage.setItem('kt_feedback', JSON.stringify(arr));
+}
+$q('#exportFeedback').onclick = ()=>{
+  const fb = JSON.parse(localStorage.getItem('kt_feedback')||'[]');
+  const votes = JSON.parse(localStorage.getItem('kt_votes')||'{}');
+  const out = { feedback: fb, votes };
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'kt_feedback.json'; a.click();
+};
+
+/* -------------------------
+  Onboarding
+----------------------------*/
+$q('#onboardBtn').onclick = ()=> { $q('#onboardModal').classList.remove('hidden'); };
+$q('#closeOnboard').onclick = ()=> $q('#onboardModal').classList.add('hidden');
+$q('#onboardSkip').onclick = ()=> { $q('#onboardModal').classList.add('hidden'); };
+
+$q('#onboardForm').onsubmit = e => {
+  e.preventDefault();
+  const form = e.target;
+  const storeName = form.storeName.value;
+  // simulate pre-populating data and closing
+  products = sampleProducts.map(p => ({...p}));
+  orders = [];
+  customers = [];
+  saveState();
+  renderAll();
+  $q('#onboardModal').classList.add('hidden');
+  alert(`Demo store "${storeName}" created. You can now run the walkthrough.`);
+};
+
+/* -------------------------
+  Helpers: save state and counts
+----------------------------*/
+function saveState(){
+  localStorage.setItem('kt_products', JSON.stringify(products));
+  localStorage.setItem('kt_orders', JSON.stringify(orders));
+  localStorage.setItem('kt_customers', JSON.stringify(customers));
+  localStorage.setItem('kt_cart', JSON.stringify(cart));
+}
+
+function updateCounts(){
+  $q('#todaySales').textContent = '14,500'; // static demo
+  $q('#openOrders').textContent = orders.filter(o=> o.status !== 'delivered').length;
+}
+
+/* -------------------------
+  Chart init
+----------------------------*/
+function initChart(){
+  const ctx = $q('#salesChart');
   new Chart(ctx, {
-    type:'line',
-    data:{
+    type: 'line',
+    data: {
       labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
       datasets:[{ label:'KES Sales', data:[12000,9000,15000,11000,14500,17000,13500], fill:true, tension:0.3, backgroundColor:'rgba(242,143,34,0.12)', borderColor:'rgba(242,143,34,0.95)' }]
     },
@@ -465,63 +736,46 @@ function initSalesChart(){
   });
 }
 
-function updateCounts(){
-  document.getElementById('todaySales').textContent = 14500;
-  document.getElementById('openOrders').textContent = orders.filter(o=>o.status!=='delivered').length;
+/* -------------------------
+  Generic init & bindings
+----------------------------*/
+$q('#mobileSend').onclick = ()=> {
+  const v = $q('#mobileInput').value.trim(); if(!v) return; processMobileInput(v); $q('#mobileInput').value = '';
+};
+$q('#viewCart').onclick = ()=> { $q('#panel')?.scrollIntoView?.({behavior:'smooth'}); $q('#panel')?.focus?.(); };
+$q('#clearCart').onclick = ()=> { cart = []; saveState(); renderCartView(); updateCartCount(); };
+$q('#checkoutBtn').onclick = ()=> checkout();
+$q('#simulateMpesa').onclick = ()=> { if(confirm('Simulate M-Pesa success?')) { orders = orders.map(o=> ({...o, status:'delivered'})); saveState(); renderOrders(); appendMobileMessage('✅ All demo orders marked delivered', 'bot'); } };
+
+$q('#closeDelivery').onclick = ()=> $q('#deliveryModal').classList.add('hidden');
+$q('#closeWalk').onclick = ()=> $q('#walkModal').classList.add('hidden');
+
+$q('#bookBtn').onclick = (e)=> { e.preventDefault(); if(CALENDLY_URL) window.open(CALENDLY_URL, '_blank'); else window.open(WHATSAPP_LINK, '_blank'); };
+
+$q('#themeToggle').onclick = ()=> {
+  const pf = $q('#phoneWrap'); pf.classList.toggle('hidden');
+};
+
+/* -------------------------
+  Product quick add via anchors
+----------------------------*/
+function quickAddDemo(){
+  addToCart('cement50',1);
+  addToCart('boxnails',2);
 }
 
 /* -------------------------
-  UI wiring
+  Rendering all pieces
 ----------------------------*/
-document.getElementById('sendBtn').onclick = ()=> {
-  const v = document.getElementById('chatInput').value.trim(); if(!v) return;
-  processChatInput(v); document.getElementById('chatInput').value='';
-};
-document.getElementById('voiceBtn').onclick = ()=> {
-  appendChat('🎙️ Voice note: "Add cement please"', 'user');
-  setTimeout(()=> processChatInput('add cement'), 700);
-};
+function renderAll(){
+  renderProducts(); renderTopSellers(); renderLowStock(); renderOrders(); renderCustomers(); renderCartView(); initChart(); updateCounts();
+}
+renderAll();
 
-document.getElementById('viewCart').onclick = ()=> {
-  // focus cart panel (scroll)
-  document.getElementById('panel').scrollIntoView({behavior:'smooth'});
-};
+/* persist before unload */
+window.addEventListener('beforeunload', saveState);
 
-document.getElementById('checkoutBtn').onclick = ()=> checkout();
-document.getElementById('clearCart').onclick = ()=> { cart=[]; updateCartView(); updateCartCount(); };
-
-document.querySelectorAll('.voteBtn').forEach((b,i)=>{
-  b.onclick = ()=> voteFeature(['Auto stock alerts','WhatsApp ordering','Delivery tracking'][i], b);
-});
-
-document.getElementById('feedbackForm').onsubmit = (e)=> { e.preventDefault(); submitFeedback(e.target); };
-
-document.getElementById('downloadPdf').onclick = ()=>{
-  // produce a short PDF-like print (simple)
-  const specs = `Kwa Ntau • Retail Automation Brief\n\nProblems solved:\n- Automate WhatsApp orders\n- Low-stock alerts\n- M-Pesa integration\n\nNext steps: Discovery -> MVP -> Pilot\n`;
-  const w = window.open('','print');
-  w.document.write('<pre>'+specs+'</pre>'); w.print();
-};
-
-document.getElementById('bookBtn').onclick = (e)=> {
-  e.preventDefault();
-  if (CALENDLY_URL) window.open(CALENDLY_URL, '_blank');
-  else window.open(WHATSAPP_NUMBER, '_blank');
-};
-
-/* Theme toggle (light / dark demo) */
-let dark=false;
-document.getElementById('themeToggle').onclick = ()=>{
-  dark = !dark;
-  if(dark) document.documentElement.style.background='#0b1220', document.body.style.background='#071023', document.querySelectorAll('main,header,footer').forEach(n=> n.classList.add('text-white'));
-  else { document.documentElement.style.background=''; document.body.style.background=''; document.querySelectorAll('main,header,footer').forEach(n=> n.classList.remove('text-white')); }
-};
-
-/* initial render */
-renderProducts(); renderOrders(); renderInventory(); updateCartView(); initSalesChart(); updateCounts();
-
-/* Quick demo content */
-appendChat("Karibu! 👋 I'm the Kwa Ntau shop bot. Try 'stock' or 'add cement'.");
 </script>
+
 </body>
 </html>
