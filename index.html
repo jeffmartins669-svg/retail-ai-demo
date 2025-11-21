@@ -1,525 +1,527 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RetailAI - Gemini Powered Demo</title>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="[https://unpkg.com/react@18/umd/react.development.js](https://unpkg.com/react@18/umd/react.development.js)"></script>
-    <script crossorigin src="[https://unpkg.com/react-dom@18/umd/react-dom.development.js](https://unpkg.com/react-dom@18/umd/react-dom.development.js)"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="[https://unpkg.com/@babel/standalone/babel.min.js](https://unpkg.com/@babel/standalone/babel.min.js)"></script>
-    
-    <!-- Tailwind CSS -->
-    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
-    
-    <!-- Phosphor Icons -->
-    <script src="[https://unpkg.com/@phosphor-icons/web](https://unpkg.com/@phosphor-icons/web)"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kwa Ntau — Retail Automation Demo</title>
 
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .phone-screen { scrollbar-width: none; -ms-overflow-style: none; }
-        .phone-screen::-webkit-scrollbar { display: none; }
-        .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-        
-        /* Pulse animation for recording */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(2); opacity: 0; }
-        }
-        .recording-ring::before {
-            content: ''; position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: #ef4444; border-radius: 50%; z-index: -1; animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-    </style>
+<!-- Tailwind for quick styling (demo only) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Chart.js for dashboard charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  :root{
+    --primary-600:#F28F22; --primary-500:#F3A744; --primary-300:#F8C883;
+    --steel-700:#525C66; --eco-700:#2F7D47;
+    --bg:#f5f7fa;
+  }
+  body { background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+  /* small polished touches */
+  .glass { backdrop-filter: blur(4px); background: rgba(255,255,255,0.6); }
+  .kt-logo { display:flex; gap:.5rem; align-items:center; font-weight:700; font-size:1.05rem; color:var(--steel-700); }
+  .kt-icon { width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--primary-500),var(--primary-300)); display:flex;align-items:center;justify-content:center;color:white;font-weight:700; box-shadow:0 6px 20px rgba(34,34,34,0.12); }
+  .pulse { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%{ transform:scale(1);} 50%{ transform:scale(1.03);} 100%{ transform:scale(1);} }
+  .chip { background:#fff;padding:.25rem .5rem;border-radius:999px;border:1px solid #eee;font-size:.8rem; }
+  .shadow-soft { box-shadow: 0 6px 18px rgba(16,24,40,0.06); }
+  /* small responsive tweaks */
+  @media (max-width:1024px){ .lg\\:show { display:none; } }
+</style>
 </head>
-<body>
-    <div id="root"></div>
+<body class="min-h-screen">
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-        const Icon = ({ name, className }) => <i className={`ph-fill ph-${name} ${className}`}></i>;
+<!-- TOPBAR -->
+<header class="flex items-center justify-between px-6 py-4 bg-white glass border-b">
+  <div class="flex items-center gap-4">
+    <div class="kt-logo">
+      <div class="kt-icon">KN</div>
+      <div>
+        <div class="text-sm">Kwa Ntau</div>
+        <div class="text-xs text-slate-500">Hardware • MaliMali Automation</div>
+      </div>
+    </div>
+  </div>
 
-        function App() {
-            // --- STATE ---
-            const [messages, setMessages] = useState([
-                { id: 1, sender: 'bot', text: "Karibu! 👋 I'm the Nairobi Fashion AI (Powered by Gemini ✨). Type or send a Voice Note 🎙️ to order." }
-            ]);
-            const [inputText, setInputText] = useState("");
-            const [isTyping, setIsTyping] = useState(false);
-            const [activeNode, setActiveNode] = useState(null); 
-            const [isRecording, setIsRecording] = useState(false);
-            const [apiKey, setApiKey] = useState("");
-            const [showSettings, setShowSettings] = useState(false);
-            const [adminInsight, setAdminInsight] = useState(null);
-            const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
-            
-            // Business Data
-            const [revenue, setRevenue] = useState(14500);
-            const [inventory, setInventory] = useState({ "Red Dress": 4, "Blue Denim": 12, "Sneakers": 8, "Sun Hat": 5 });
+  <div class="flex items-center gap-4">
+    <div class="chip">Demo Mode</div>
+    <button id="themeToggle" class="px-3 py-1 rounded shadow-soft text-sm">Toggle Theme</button>
+    <a id="bookBtn" href="#" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">Book a Call</a>
+  </div>
+</header>
 
-            const bottomRef = useRef(null);
+<!-- MAIN -->
+<main class="p-6 grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
 
-            useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
+  <!-- LEFT: Interactive Product / Chat -->
+  <section class="col-span-1 space-y-4">
+    <!-- WhatsApp-style Chat Simulation -->
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg bg-[#075E54] text-white flex items-center justify-center">🤖</div>
+        <div>
+          <div class="font-semibold">Kwa Ntau Shop Bot</div>
+          <div class="text-xs text-slate-500">Simulated WhatsApp conversation</div>
+        </div>
+        <div class="ml-auto text-xs text-slate-400">Live preview</div>
+      </div>
 
-            // --- GEMINI API HELPER ---
-            const callGemini = async (prompt) => {
-                if (!apiKey) return null; // Fallback to simulation if no key
-                
-                try {
-                    const response = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
-                        {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }]
-                            })
-                        }
-                    );
-                    const data = await response.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
-                } catch (error) {
-                    console.error("Gemini Error:", error);
-                    return null;
-                }
-            };
+      <div id="chatArea" class="mt-4 h-64 overflow-y-auto p-3 bg-slate-50 rounded-lg space-y-2" aria-live="polite">
+        <!-- chat messages appear here -->
+      </div>
 
-            // --- LOGIC HANDLERS ---
-            
-            const handleVoiceRecord = async () => {
-                if (isRecording) return;
-                setIsRecording(true);
-                
-                setTimeout(() => {
-                    setIsRecording(false);
-                    const voiceMsg = { id: Date.now(), sender: 'user', type: 'audio', duration: '0:04' };
-                    setMessages(prev => [...prev, voiceMsg]);
-                    setIsTyping(true);
-                    // Pass "transcribed" text to logic
-                    processLogic("I want that red dress please");
-                }, 2000);
-            };
+      <div class="mt-3 flex gap-2">
+        <input id="chatInput" class="flex-1 rounded-full p-3 border" placeholder="Type: e.g., 'Do you have cement?'" />
+        <button id="sendBtn" class="px-4 rounded-full bg-[#075E54] text-white">Send</button>
+        <button id="voiceBtn" class="px-3 rounded-full bg-orange-400 text-white">🎙️</button>
+      </div>
 
-            const handleSend = () => {
-                if (!inputText.trim()) return;
-                const userMsg = { id: Date.now(), sender: 'user', text: inputText };
-                setMessages(prev => [...prev, userMsg]);
-                setInputText("");
-                setIsTyping(true);
-                processLogic(userMsg.text);
-            };
+      <div class="mt-3 text-xs text-slate-500">Tip: Try phrases like <span class="font-medium">"stock", "price", "buy", "delivery"</span></div>
+    </div>
 
-            const generateAdminInsight = async () => {
-                setIsGeneratingInsight(true);
-                setActiveNode("gemini_admin");
-                
-                let insight = "";
-                if (apiKey) {
-                    const prompt = `You are a retail business analyst for 'Nairobi Fashion Hub'. 
-                    Current Data: Revenue KES ${revenue}, Inventory: ${JSON.stringify(inventory)}. 
-                    Generate a 2-sentence insight about performance and a stock warning if low. Use emojis.`;
-                    
-                    insight = await callGemini(prompt);
-                }
-                
-                if (!insight) {
-                    // Fallback
-                    await wait(1500);
-                    insight = "📈 Revenue is up 12% today! ⚠️ Stock Alert: Red Dress inventory is low (4 units). Consider restocking before the weekend rush.";
-                }
-                
-                setAdminInsight(insight);
-                setIsGeneratingInsight(false);
-                setActiveNode(null);
-            };
+    <!-- Product Browsing -->
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="font-semibold">Shop — Hardware & MaliMali</div>
+          <div class="text-xs text-slate-500">Click a product to view details & add to cart</div>
+        </div>
+        <div class="text-sm text-slate-500">Cart: <span id="cartCount">0</span></div>
+      </div>
 
-            // 3. The AI Brain (Enhanced with Gemini)
-            const processLogic = async (text) => {
-                const lowerText = text.toLowerCase();
-                
-                // TRIGGER: Whisper (Simulation)
-                if (text === "I want that red dress please") {
-                    setActiveNode("whisper"); 
-                    await wait(800);
-                }
+      <div id="productGrid" class="grid grid-cols-2 gap-3">
+        <!-- product cards inserted here -->
+      </div>
 
-                // TRIGGER: Gemini Intent Analysis
-                setActiveNode("gemini");
-                let intentData = null;
+      <div class="mt-4 flex justify-between items-center">
+        <button id="viewCart" class="px-3 py-2 bg-[#F28F22] text-white rounded">View Cart</button>
+        <div class="text-xs text-slate-500">Demo payments simulated</div>
+      </div>
+    </div>
 
-                if (apiKey) {
-                    // REAL GEMINI CALL
-                    const prompt = `You are a shopping assistant for 'Nairobi Fashion Hub'. 
-                    Inventory keys: ${Object.keys(inventory).join(", ")}.
-                    User says: "${text}".
-                    
-                    Return ONLY a JSON object with these fields:
-                    - intent: 'buy', 'support', or 'unknown'
-                    - item: (string, the product name from inventory if mentioned, else null)
-                    - response: (string, a friendly Kenyan-style reply e.g. using 'Karibu', 'Sawa'. Keep it short.)
-                    `;
-                    
-                    const rawResponse = await callGemini(prompt);
-                    try {
-                        // Clean up markdown if Gemini adds it
-                        const jsonStr = rawResponse.replace(/```json/g, '').replace(/```/g, '');
-                        intentData = JSON.parse(jsonStr);
-                    } catch (e) { console.error("JSON Parse Error", e); }
-                }
+    <!-- Feedback & Feature Voting -->
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="font-semibold mb-2">Collect Feedback</div>
+      <div class="text-sm text-slate-500 mb-3">Ask clients to vote on features and leave comments.</div>
 
-                await wait(1000); // UI visual delay
+      <div class="grid grid-cols-1 gap-2 mb-3">
+        <div class="flex items-center justify-between">
+          <div>Auto stock alerts</div>
+          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>WhatsApp ordering</div>
+          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>Delivery tracking</div>
+          <button class="voteBtn px-3 py-1 rounded bg-slate-100">Vote</button>
+        </div>
+      </div>
 
-                // --- SCENARIO A: Inventory Check (Buy) ---
-                // Uses Gemini detected item OR fallback keyword matching
-                const detectedItem = intentData?.item || (lowerText.includes("dress") ? "Red Dress" : null);
-                
-                if (detectedItem && inventory[detectedItem] !== undefined) {
-                    setActiveNode("loyverse");
-                    await wait(1000);
-                    
-                    if (inventory[detectedItem] > 0) {
-                        setIsTyping(false);
-                        
-                        // Main Response
-                        const mainMsg = intentData?.response || `I found it! We have ${inventory[detectedItem]} ${detectedItem}es left. Price: KES 2,500.`;
-                        addBotMessage(mainMsg);
-                        
-                        // UPSELL LOGIC (Gemini Powered)
-                        await wait(800);
-                        setIsTyping(true);
-                        setActiveNode("gemini_upsell");
-                        
-                        let upsellMsg = "";
-                        if (apiKey) {
-                            const upsellPrompt = `User wants to buy ${detectedItem}. 
-                            Available accessories: Sneakers, Sun Hat, Blue Denim.
-                            Suggest ONE accessory to go with it. Write a 1-sentence sales pitch starting with "💡 Style Tip:".`;
-                            upsellMsg = await callGemini(upsellPrompt);
-                        }
-                        
-                        if (!upsellMsg) {
-                            upsellMsg = "💡 Style Tip: These White Sneakers go perfectly with the red dress. Want to add them for KES 1,500?";
-                        }
+      <form id="feedbackForm" class="space-y-2">
+        <input name="name" placeholder="Your name" class="w-full p-2 border rounded" />
+        <input name="shop" placeholder="Shop name" class="w-full p-2 border rounded" />
+        <textarea name="comment" placeholder="Comments or feature requests" rows="3" class="w-full p-2 border rounded"></textarea>
+        <div class="flex gap-2">
+          <button type="submit" class="px-3 py-2 rounded bg-green-600 text-white">Send Feedback</button>
+          <button id="downloadPdf" type="button" class="px-3 py-2 rounded bg-slate-100">Download Brief</button>
+        </div>
+        <div id="feedbackStatus" class="text-xs text-green-600 mt-1"></div>
+      </form>
+    </div>
+  </section>
 
-                        await wait(1000);
-                        setIsTyping(false);
-                        addBotMessage(upsellMsg);
-                    }
-                    setActiveNode(null);
-                    return;
-                }
+  <!-- CENTER: Dashboard Preview (Clickable) -->
+  <section class="col-span-1 lg:col-span-1 space-y-4">
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm font-semibold">Admin Dashboard</div>
+          <div class="text-xs text-slate-500">Overview (click elements to interact)</div>
+        </div>
+        <div><span class="chip">Preview</span></div>
+      </div>
 
-                // --- SCENARIO B: Yes/Buy ---
-                if (lowerText.includes("yes") || lowerText.includes("both") || lowerText.includes("buy") || intentData?.intent === 'buy') {
-                    setIsTyping(false);
-                    const total = lowerText.includes("both") ? 4000 : 2500;
-                    
-                    setActiveNode("paystack");
-                    addBotMessage(`Perfect! Total is KES ${total.toLocaleString()}. Triggering M-Pesa prompt now...`);
-                    
-                    setTimeout(() => {
-                        setMessages(prev => [...prev, { 
-                            id: Date.now(), 
-                            sender: 'system', 
-                            type: 'payment_card',
-                            amount: total
-                        }]);
-                    }, 600);
-                    return;
-                }
+      <div class="grid grid-cols-2 gap-3 mt-3">
+        <div class="p-3 rounded-lg bg-slate-50">
+          <div class="text-xs text-slate-500">Today Sales</div>
+          <div class="text-xl font-bold">KES <span id="todaySales">14,500</span></div>
+        </div>
+        <div class="p-3 rounded-lg bg-slate-50">
+          <div class="text-xs text-slate-500">Open Orders</div>
+          <div class="text-xl font-bold"><span id="openOrders">3</span></div>
+        </div>
+      </div>
 
-                // DEFAULT RESPONSE
-                setIsTyping(false);
-                addBotMessage(intentData?.response || "I can help you check stock. Try saying 'Do you have a Red Dress?'");
-                setActiveNode(null);
-            };
+      <div class="mt-4 h-44">
+        <canvas id="salesChart"></canvas>
+      </div>
 
-            const handlePaymentConfirm = async (amount) => {
-                setActiveNode("paystack_loop");
-                await wait(2000);
-                
-                setRevenue(prev => prev + amount);
-                setInventory(prev => ({...prev, "Red Dress": prev["Red Dress"] - 1}));
-                
-                setActiveNode("uber");
-                await wait(1000);
-                addBotMessage("✅ Payment Received! Dispatching rider...");
-                await wait(800);
-                setMessages(prev => [...prev, { id: Date.now(), sender: 'system', type: 'map' }]);
-                
-                setActiveNode("airtable");
-                setTimeout(() => setActiveNode(null), 2000);
-            };
+      <div class="mt-3">
+        <div class="text-xs text-slate-500 mb-2">Recent Orders</div>
+        <div id="ordersList" class="space-y-2">
+          <!-- orders go here -->
+        </div>
+      </div>
+    </div>
 
-            const addBotMessage = (text) => setMessages(prev => [...prev, { id: Date.now(), sender: 'bot', text }]);
-            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold">Inventory</div>
+        <div class="text-xs text-slate-500">Manage stock</div>
+      </div>
 
-            return (
-                <div className="min-h-screen flex flex-col lg:flex-row max-w-7xl mx-auto p-4 gap-6 relative">
-                    
-                    {/* SETTINGS MODAL */}
-                    {showSettings && (
-                        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                            <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl">
-                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <Icon name="gear" /> Settings
-                                </h3>
-                                <label className="block text-sm font-medium text-slate-700 mb-2">Gemini API Key (Optional)</label>
-                                <input 
-                                    type="password" 
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="Paste key to enable Real AI..."
-                                    className="w-full border p-2 rounded-lg mb-4 font-mono text-sm"
-                                />
-                                <p className="text-xs text-slate-500 mb-4">
-                                    Without a key, the system runs in "Simulation Mode". Get a key from Google AI Studio.
-                                </p>
-                                <button 
-                                    onClick={() => setShowSettings(false)}
-                                    className="w-full bg-slate-900 text-white py-2 rounded-lg font-bold"
-                                >
-                                    Save & Close
-                                </button>
-                            </div>
-                        </div>
-                    )}
+      <div id="inventoryList" class="mt-3 space-y-2">
+        <!-- inventory items -->
+      </div>
+    </div>
+  </section>
 
-                    {/* HEADER BUTTONS */}
-                    <div className="absolute top-4 right-4 z-40 flex gap-2">
-                         <button 
-                            onClick={() => setShowSettings(true)}
-                            className="bg-white p-2 rounded-full shadow-md text-slate-600 hover:text-blue-600 transition"
-                        >
-                            <Icon name="gear" className="text-xl" />
-                        </button>
-                    </div>
+  <!-- RIGHT: Details / Cart / Checkout -->
+  <aside class="col-span-1 space-y-4 lg:col-span-1">
+    <div id="panel" class="bg-white rounded-2xl p-4 shadow-soft min-h-[220px]">
+      <div class="font-semibold">Cart & Checkout</div>
+      <div id="cartView" class="mt-3 space-y-2 text-sm text-slate-600">
+        <div>No items in cart</div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="checkoutBtn" class="px-3 py-2 bg-[#075E54] text-white rounded">Checkout</button>
+        <button id="clearCart" class="px-3 py-2 bg-slate-100 rounded">Clear</button>
+      </div>
+    </div>
 
-                    {/* LEFT: DASHBOARD (Business View) */}
-                    <div className="w-full lg:w-1/3 space-y-4">
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                                    <Icon name="chart-bar" className="text-blue-600" /> Business Overview
-                                </h2>
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">● Live</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                                <div className="bg-blue-50 p-4 rounded-xl">
-                                    <div className="text-slate-500 text-xs mb-1">Total Sales</div>
-                                    <div className="text-2xl font-bold text-slate-800">KES {revenue.toLocaleString()}</div>
-                                </div>
-                                <div className="bg-orange-50 p-4 rounded-xl">
-                                    <div className="text-slate-500 text-xs mb-1">Orders</div>
-                                    <div className="text-2xl font-bold text-slate-800">14</div>
-                                </div>
-                            </div>
-                            
-                            {/* GEMINI INSIGHT BUTTON */}
-                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                                        <Icon name="sparkle" className="text-purple-500" /> AI Business Insight
-                                    </span>
-                                    <button 
-                                        onClick={generateAdminInsight}
-                                        disabled={isGeneratingInsight}
-                                        className="text-[10px] bg-white border px-2 py-1 rounded hover:bg-slate-50 disabled:opacity-50"
-                                    >
-                                        {isGeneratingInsight ? "Generating..." : "Generate ✨"}
-                                    </button>
-                                </div>
-                                <p className="text-xs text-slate-600 italic leading-relaxed min-h-[40px]">
-                                    {adminInsight || "Click generate to ask Gemini for a daily summary..."}
-                                </p>
-                            </div>
-                        </div>
+    <div class="bg-white rounded-2xl p-4 shadow-soft">
+      <div class="font-semibold">Prototype Notes</div>
+      <ul class="text-xs text-slate-500 mt-2 space-y-1">
+        <li>• Click products to add to cart. Try checkout to simulate M-Pesa STK.</li>
+        <li>• Vote + comment to capture customer needs. Votes persist locally (or submit to Google Sheets).</li>
+        <li>• Use "Mark delivered" in orders to simulate fulfillment and see inventory update.</li>
+      </ul>
+    </div>
+  </aside>
+</main>
 
-                        {/* Logic Visualizer */}
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                            <h3 className="font-bold text-slate-700 mb-4 text-sm">Automation Engine (Make.com)</h3>
-                            <div className="space-y-3">
-                                <LogicItem id="whisper" active={activeNode} icon="microphone" label="Whisper (Audio-to-Text)" color="text-purple-600" bg="bg-purple-50" />
-                                <LogicItem id="gemini" active={activeNode} icon="sparkle" label="Gemini (Intent & Logic)" color="text-blue-600" bg="bg-blue-50" />
-                                <LogicItem id="gemini_upsell" active={activeNode} icon="t-shirt" label="Gemini (Style Upsell)" color="text-pink-600" bg="bg-pink-50" />
-                                <LogicItem id="loyverse" active={activeNode} icon="storefront" label="Loyverse Stock" color="text-orange-600" bg="bg-orange-50" />
-                                <LogicItem id="paystack" active={activeNode} icon="credit-card" label="Paystack STK" color="text-indigo-600" bg="bg-indigo-50" />
-                                <LogicItem id="uber" active={activeNode} icon="moped" label="Uber Direct" color="text-slate-800" bg="bg-slate-100" />
-                            </div>
-                        </div>
-                        
-                        <div className="bg-slate-800 text-slate-400 p-4 rounded-xl text-xs font-mono">
-                            <p className="mb-2 text-slate-200 font-bold border-b border-slate-700 pb-1">Real-time Logs</p>
-                            {activeNode === 'whisper' && <p className="text-purple-400">> Transcribing audio file...</p>}
-                            {activeNode === 'gemini' && <p className="text-blue-400 animate-pulse">> Calling Gemini API (Intent)...</p>}
-                            {activeNode === 'gemini_upsell' && <p className="text-pink-400 animate-pulse">> Gemini Generating Style Tip...</p>}
-                            {activeNode === 'gemini_admin' && <p className="text-purple-400 animate-pulse">> Gemini Analyzing Revenue Data...</p>}
-                            {activeNode === 'paystack_loop' && <p className="text-indigo-400">> Waiting for M-Pesa PIN...</p>}
-                            {activeNode === 'uber' && <p className="text-white">> Finding nearest rider (2km away)...</p>}
-                            {!activeNode && <p>System Idle. Listening for webhooks...</p>}
-                        </div>
-                    </div>
+<!-- Simple footer -->
+<footer class="text-center text-xs text-slate-400 py-6">Kwa Ntau Demo • Built for client feedback • Share link with partners</footer>
 
-                    {/* CENTER: PHONE SIMULATOR */}
-                    <div className="w-full lg:w-1/3 flex justify-center">
-                        <div className="w-[360px] h-[720px] bg-slate-900 rounded-[3rem] border-[8px] border-slate-900 shadow-2xl overflow-hidden relative flex flex-col">
-                            {/* Header */}
-                            <div className="bg-[#075E54] text-white p-4 pt-12 flex items-center gap-3 shadow-md z-10">
-                                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                                    <Icon name="robot" className="text-lg" />
-                                </div>
-                                <div>
-                                    <h3 className="font-semibold text-sm">Fashion Hub AI</h3>
-                                    <p className="text-[10px] opacity-80">Powered by Gemini ✨</p>
-                                </div>
-                                <div className="ml-auto flex gap-3">
-                                    <Icon name="video-camera" />
-                                    <Icon name="phone" />
-                                </div>
-                            </div>
+<script>
+/* -------------------------
+  Configuration
+----------------------------*/
+const GOOGLE_SCRIPT_URL = ""; // optional: set your Google Apps Script URL to save feedback
+const WHATSAPP_NUMBER = "https://wa.me/254XXXXXXXX"; // set your booking link
+const CALENDLY_URL = ""; // optional
 
-                            {/* Chat Body */}
-                            <div className="bg-[#efeae2] flex-1 overflow-y-auto phone-screen p-4 space-y-3 bg-opacity-90" style={{backgroundImage: 'url("[https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png](https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png)")', backgroundBlendMode: 'overlay'}}>
-                                {messages.map(msg => (
-                                    <div key={msg.id} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                                        {msg.type === 'audio' ? (
-                                            <div className="bg-[#DCF8C6] p-2 rounded-lg rounded-tr-none shadow-sm w-48 flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white">
-                                                    <Icon name="play" className="text-xs" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="h-1 bg-green-600/30 rounded-full w-full mb-1">
-                                                        <div className="h-1 bg-green-600 rounded-full w-2/3"></div>
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-500">{msg.duration} • 12:42 PM</div>
-                                                </div>
-                                                <div className="w-6 h-6 rounded-full overflow-hidden border border-white">
-                                                   <img src="[https://i.pravatar.cc/100?img=33](https://i.pravatar.cc/100?img=33)" alt="User" />
-                                                </div>
-                                            </div>
-                                        ) : msg.type === 'payment_card' ? (
-                                            <div className="bg-white p-3 rounded-lg shadow-sm w-56 border-l-4 border-green-500">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="text-sm font-bold text-slate-800">M-Pesa Express</div>
-                                                    <div className="bg-green-100 text-green-800 text-[10px] px-1 rounded">SECURE</div>
-                                                </div>
-                                                <p className="text-xs text-slate-500 mb-3">Amount: <span className="text-slate-800 font-bold">KES {msg.amount.toLocaleString()}</span></p>
-                                                <button onClick={() => handlePaymentConfirm(msg.amount)} className="w-full bg-green-500 hover:bg-green-600 text-white text-xs py-2 rounded font-medium transition">
-                                                    Tap to Pay
-                                                </button>
-                                            </div>
-                                        ) : msg.type === 'map' ? (
-                                            <div className="bg-white p-0 rounded-lg shadow-sm w-60 overflow-hidden">
-                                                <div className="h-24 bg-blue-50 relative">
-                                                    <div className="absolute inset-0 opacity-30" style={{backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '10px 10px'}}></div>
-                                                    <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 50">
-                                                        <path d="M 10 25 Q 50 10 90 25" stroke="#3b82f6" strokeWidth="2" fill="none" strokeDasharray="4" />
-                                                        <circle cx="90" cy="25" r="3" fill="#ef4444" className="animate-ping" />
-                                                        <circle cx="90" cy="25" r="3" fill="#ef4444" />
-                                                    </svg>
-                                                </div>
-                                                <div className="p-3">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                                                            <Icon name="moped" className="text-slate-600" />
-                                                        </div>
-                                                        <div>
-                                                            <div className="text-xs font-bold">Rider: Juma</div>
-                                                            <div className="text-[10px] text-green-600">Arriving in 12 mins</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className={`max-w-[85%] p-2 px-3 rounded-lg text-sm shadow-sm ${msg.sender === 'user' ? 'bg-[#DCF8C6] text-slate-900 rounded-tr-none' : 'bg-white text-slate-900 rounded-tl-none'}`}>
-                                                {msg.text}
-                                                <div className="text-[9px] text-right opacity-40 mt-1">12:42 PM</div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                                {isTyping && <div className="bg-white p-2 rounded-lg rounded-tl-none self-start w-12 flex items-center justify-center gap-1 shadow-sm"><div className="w-1 h-1 bg-slate-400 rounded-full typing-dot"></div><div className="w-1 h-1 bg-slate-400 rounded-full typing-dot"></div><div className="w-1 h-1 bg-slate-400 rounded-full typing-dot"></div></div>}
-                                <div ref={bottomRef}></div>
-                            </div>
+// sample product data
+const products = [
+  { id: 'p-cement', name: 'Cement (50kg)', price: 650, stock: 18, img: '' },
+  { id: 'p-iron', name: 'Roofing Iron Sheet', price: 3200, stock: 6, img: '' },
+  { id: 'p-nails', name: 'Box of Nails', price: 120, stock: 34, img: '' },
+  { id: 'p-basin', name: 'Washing Basin', price: 900, stock: 4, img: '' }
+];
 
-                            {/* Input Area */}
-                            <div className="bg-[#f0f2f5] p-2 px-3 flex items-center gap-2">
-                                <button className="text-slate-500"><Icon name="plus" className="text-xl" /></button>
-                                <input 
-                                    type="text" 
-                                    className="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none"
-                                    placeholder="Message..."
-                                    value={inputText}
-                                    onChange={(e) => setInputText(e.target.value)}
-                                    onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                                />
-                                {inputText ? (
-                                    <button onClick={handleSend} className="bg-[#075E54] text-white w-10 h-10 rounded-full flex items-center justify-center shadow hover:scale-105 transition">
-                                        <Icon name="paper-plane-right" className="text-lg" />
-                                    </button>
-                                ) : (
-                                    <button 
-                                        onClick={handleVoiceRecord}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center shadow transition relative ${isRecording ? 'bg-red-500 text-white recording-ring' : 'bg-[#075E54] text-white hover:scale-105'}`}
-                                    >
-                                        <Icon name={isRecording ? "stop" : "microphone"} className="text-lg" />
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+// sample orders (admin view)
+let orders = [
+  { id: 'ord-1', customer: 'Asha • MaliMali', total: 3200, items: ['Roofing Iron Sheet'], status: 'pending' },
+  { id: 'ord-2', customer: 'Juma • Shop', total: 770, items: ['Cement (50kg)', 'Nails'], status: 'pending' },
+  { id: 'ord-3', customer: 'Mary • Contractor', total: 1200, items: ['Washing Basin'], status: 'delivered' }
+];
 
-                    {/* RIGHT: INFO PANEL */}
-                    <div className="w-full lg:w-1/3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit">
-                        <h2 className="font-bold text-slate-800 mb-4">Why Gemini? 🇰🇪</h2>
-                        <ul className="space-y-4">
-                            <FeaturePoint icon="sparkle" color="text-blue-600" title="Natural Intent" desc="Gemini understands 'I need a fit for a party' without hardcoded keywords." />
-                            <FeaturePoint icon="t-shirt" color="text-pink-600" title="Smart Upselling" desc="It analyzes the cart item and suggests a matching accessory dynamically." />
-                            <FeaturePoint icon="chart-bar" color="text-purple-600" title="Biz Insight" desc="Generates daily business summaries for the owner automatically." />
-                        </ul>
-                        <div className="mt-6 pt-6 border-t border-slate-100">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Coming Soon</h3>
-                            <div className="flex flex-wrap gap-2">
-                                <Badge text="Visual Search (Gemini Vision)" />
-                                <Badge text="Auto-Reversals" />
-                                <Badge text="Instagram DM" />
-                            </div>
-                        </div>
-                    </div>
+let cart = [];
 
-                </div>
-            );
-        }
+/* -------------------------
+  Init: render products & dashboard
+----------------------------*/
+function renderProducts(){
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  products.forEach(p=>{
+    const el = document.createElement('div');
+    el.className = 'p-3 bg-white rounded-lg border shadow-sm cursor-pointer';
+    el.innerHTML = `
+      <div class="font-semibold">${p.name}</div>
+      <div class="text-xs text-slate-500">KES ${p.price.toLocaleString()}</div>
+      <div class="text-xs mt-2 ${p.stock<5 ? 'text-red-600' : 'text-slate-500'}">Stock: ${p.stock}</div>
+    `;
+    el.onclick = ()=> addToCart(p.id);
+    grid.appendChild(el);
+  });
+  updateCartCount();
+}
 
-        // Component Helpers
-        const LogicItem = ({ id, active, icon, label, color, bg }) => (
-            <div className={`flex items-center gap-3 p-2 rounded-lg border transition-all ${active === id ? `border-green-400 ${bg}` : 'border-transparent opacity-60'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${bg} ${color}`}><Icon name={icon} /></div>
-                <span className={`text-xs font-bold ${active === id ? 'text-slate-800' : 'text-slate-500'}`}>{label}</span>
-                {active === id && <span className="ml-auto w-2 h-2 bg-green-500 rounded-full animate-ping"></span>}
-            </div>
-        );
+function renderOrders(){
+  const list = document.getElementById('ordersList');
+  list.innerHTML = '';
+  orders.slice().reverse().forEach(o=>{
+    const div = document.createElement('div');
+    div.className = 'p-2 rounded-lg bg-slate-50 flex items-center justify-between';
+    div.innerHTML = `<div class="text-sm"><div class="font-medium">${o.customer}</div><div class="text-xs text-slate-500">${o.items.join(', ')}</div></div>
+      <div class="text-right">
+        <div class="font-semibold">KES ${o.total}</div>
+        <div class="text-xs mt-1">${o.status}</div>
+        <div class="mt-2 flex gap-2">
+          ${o.status !== 'delivered' ? `<button class="markBtn px-2 py-1 text-xs bg-green-600 text-white rounded" data-id="${o.id}">Mark delivered</button>` : ''}
+          <button class="viewBtn px-2 py-1 text-xs bg-slate-100 rounded" data-id="${o.id}">View</button>
+        </div>
+      </div>`;
+    list.appendChild(div);
+  });
+  // attach handlers
+  document.querySelectorAll('.markBtn').forEach(b=>{
+    b.onclick = (e) => { const id = e.target.dataset.id; markDelivered(id); };
+  });
+}
 
-        const FeaturePoint = ({ icon, color, title, desc }) => (
-            <li className="flex gap-3">
-                <Icon name={icon} className={`text-xl shrink-0 ${color}`} />
-                <div>
-                    <h4 className="font-bold text-sm text-slate-800">{title}</h4>
-                    <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
-                </div>
-            </li>
-        );
+function renderInventory(){
+  const container = document.getElementById('inventoryList');
+  container.innerHTML = '';
+  products.forEach(p=>{
+    const div = document.createElement('div');
+    div.className = 'p-2 rounded-lg bg-slate-50 flex items-center justify-between';
+    div.innerHTML = `<div class="${p.stock<5 ? 'text-red-600 font-semibold' : ''}">${p.name}</div>
+      <div class="text-xs">
+        <div>Stock: ${p.stock}</div>
+        <div class="mt-1"><button data-id="${p.id}" class="restockBtn px-2 py-1 bg-slate-100 rounded text-xs">+ Restock</button></div>
+      </div>`;
+    container.appendChild(div);
+  });
+  document.querySelectorAll('.restockBtn').forEach(b=>{
+    b.onclick = (e)=> { const id = e.target.dataset.id; restockItem(id); };
+  });
+}
 
-        const Badge = ({ text }) => <span className="px-2 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold rounded border border-slate-200">{text}</span>;
+/* -------------------------
+  Cart logic
+----------------------------*/
+function addToCart(id){
+  const p = products.find(x=>x.id===id);
+  if(!p || p.stock<=0){ alert('Out of stock'); return; }
+  const existing = cart.find(c=>c.id===id);
+  if(existing) existing.qty++;
+  else cart.push({ id:p.id, name:p.name, price:p.price, qty:1 });
+  updateCartView();
+  updateCartCount();
+}
+function updateCartView(){
+  const view = document.getElementById('cartView');
+  view.innerHTML = '';
+  if(cart.length===0){ view.innerHTML = '<div>No items in cart</div>'; return; }
+  let total=0;
+  cart.forEach(i=>{
+    total += i.price*i.qty;
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between';
+    row.innerHTML = `<div>${i.name} <span class="text-xs text-slate-500">x${i.qty}</span></div><div>KES ${ (i.price*i.qty).toLocaleString() }</div>`;
+    view.appendChild(row);
+  });
+  const totdiv = document.createElement('div');
+  totdiv.className = 'mt-3 flex items-center justify-between font-semibold';
+  totdiv.innerHTML = `<div>Total</div><div>KES ${total.toLocaleString()}</div>`;
+  view.appendChild(totdiv);
+}
+function updateCartCount(){ document.getElementById('cartCount').textContent = cart.reduce((s,i)=>s+i.qty,0); }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+/* -------------------------
+  Orders & inventory actions
+----------------------------*/
+function markDelivered(id){
+  orders = orders.map(o=> o.id===id ? {...o, status:'delivered'} : o );
+  // reduce stock for that order (simulate)
+  const ord = orders.find(o=>o.id===id);
+  if(ord){
+    ord.items.forEach(name=>{
+      const prod = products.find(p=>p.name===name);
+      if(prod) prod.stock = Math.max(0, prod.stock - 1);
+    });
+  }
+  renderOrders(); renderInventory(); renderProducts(); updateCounts();
+}
+
+function restockItem(id){
+  const prod = products.find(p=>p.id===id);
+  if(prod){ prod.stock += 10; renderInventory(); renderProducts(); }
+}
+
+/* -------------------------
+  Feedback & votes (local or send)
+----------------------------*/
+function voteFeature(name, button){
+  const votes = JSON.parse(localStorage.getItem('kt_votes')||'{}');
+  votes[name] = (votes[name]||0) + 1;
+  localStorage.setItem('kt_votes', JSON.stringify(votes));
+  button.textContent = 'Voted ✓';
+  button.disabled = true;
+}
+
+async function submitFeedback(form){
+  const data = { name: form.name.value||'Anonymous', shop: form.shop.value||'-', comment: form.comment.value };
+  if(GOOGLE_SCRIPT_URL){
+    const fd = new FormData();
+    fd.append('name', data.name); fd.append('shop', data.shop); fd.append('comment', data.comment);
+    try{
+      await fetch(GOOGLE_SCRIPT_URL, { method:'POST', body:fd });
+      document.getElementById('feedbackStatus').textContent = 'Thanks — feedback sent.';
+    }catch(err){
+      document.getElementById('feedbackStatus').textContent = 'Error sending; saved locally.';
+      saveFeedbackLocal(data);
+    }
+  } else {
+    saveFeedbackLocal(data);
+    document.getElementById('feedbackStatus').textContent = 'Feedback saved locally (no backend configured).';
+  }
+  form.reset();
+  setTimeout(()=>document.getElementById('feedbackStatus').textContent = '',4000);
+}
+function saveFeedbackLocal(data){
+  const arr = JSON.parse(localStorage.getItem('kt_feedback')||'[]');
+  arr.push({...data, ts:new Date().toISOString()});
+  localStorage.setItem('kt_feedback', JSON.stringify(arr));
+}
+
+/* -------------------------
+  Chat bot simulation
+----------------------------*/
+function appendChat(text, who='bot'){
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `p-3 rounded-lg ${who==='bot' ? 'bg-white text-slate-800' : 'bg-emerald-100 text-slate-800 ml-auto'}`;
+  div.style.maxWidth = '80%';
+  div.textContent = text;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+function processChatInput(txt){
+  appendChat(txt,'user');
+  setTimeout(()=>{
+    const t = txt.toLowerCase();
+    if(t.includes('stock') || t.includes('do you have')) {
+      // find first matching product
+      const found = products.find(p=> t.includes(p.name.split(' ')[0].toLowerCase()) || p.name.toLowerCase().includes(t.replace('do you have ','').trim()));
+      if(found) appendChat(`Yes — ${found.name} • Price: KES ${found.price} • Stock: ${found.stock}`);
+      else appendChat('I can check stock and reserve items. What product are you looking for?');
+    } else if(t.includes('price')) {
+      appendChat('Tell me which product (e.g., "price of cement") and I will respond.');
+    } else if(t.includes('buy') || t.includes('order')) {
+      appendChat('Great — I can reserve this and send a payment request. Would you like to add to cart? (Try "add cement")');
+    } else if(t.startsWith('add ')) {
+      const q = t.replace('add ','');
+      const prod = products.find(p=>p.name.toLowerCase().includes(q));
+      if(prod){ addToCart(prod.id); appendChat(`${prod.name} added to cart.`); }
+      else appendChat(`Couldn't find "${q}". Try a product name.`);
+    } else {
+      appendChat("Demo: I'm a simulation. Try 'stock', 'price', 'buy', or 'add cement'.");
+    }
+  }, 600);
+}
+
+/* -------------------------
+  Checkout simulation
+----------------------------*/
+function checkout(){
+  if(cart.length===0){ alert('Cart empty'); return; }
+  // create a fake order
+  const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const id = 'ord-' + Math.random().toString(36).slice(2,7);
+  const newOrder = { id, customer: 'Demo Customer', total, items: cart.map(i=>i.name), status:'pending' };
+  orders.push(newOrder);
+  // reduce stock immediately for demo
+  cart.forEach(it=>{
+    const p = products.find(x=>x.id===it.id);
+    if(p) p.stock = Math.max(0,p.stock - it.qty);
+  });
+  cart = [];
+  updateCartView(); updateCartCount();
+  renderOrders(); renderInventory(); renderProducts(); updateCounts();
+  appendChat('Payment request sent (simulated). Order created: ' + id);
+  // show a fake MPESA modal (simple)
+  showMpesaPrompt(total, id);
+}
+
+function showMpesaPrompt(amount, orderId){
+  const yes = confirm(`Simulate M-Pesa payment of KES ${amount.toLocaleString()} for ${orderId}?\nClick OK to simulate successful payment.`);
+  if(yes){
+    // mark order paid -> delivered for demo
+    orders = orders.map(o=> o.id===orderId ? {...o, status:'delivered'} : o);
+    renderOrders();
+    appendChat('✅ Payment received. Order marked delivered.');
+  } else {
+    appendChat('Payment cancelled (demo).');
+  }
+}
+
+/* -------------------------
+  Charts & counts
+----------------------------*/
+function initSalesChart(){
+  const ctx = document.getElementById('salesChart');
+  new Chart(ctx, {
+    type:'line',
+    data:{
+      labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+      datasets:[{ label:'KES Sales', data:[12000,9000,15000,11000,14500,17000,13500], fill:true, tension:0.3, backgroundColor:'rgba(242,143,34,0.12)', borderColor:'rgba(242,143,34,0.95)' }]
+    },
+    options:{ plugins:{legend:{display:false}}, scales:{ y:{ ticks:{ callback: v => 'KES '+v } } } }
+  });
+}
+
+function updateCounts(){
+  document.getElementById('todaySales').textContent = 14500;
+  document.getElementById('openOrders').textContent = orders.filter(o=>o.status!=='delivered').length;
+}
+
+/* -------------------------
+  UI wiring
+----------------------------*/
+document.getElementById('sendBtn').onclick = ()=> {
+  const v = document.getElementById('chatInput').value.trim(); if(!v) return;
+  processChatInput(v); document.getElementById('chatInput').value='';
+};
+document.getElementById('voiceBtn').onclick = ()=> {
+  appendChat('🎙️ Voice note: "Add cement please"', 'user');
+  setTimeout(()=> processChatInput('add cement'), 700);
+};
+
+document.getElementById('viewCart').onclick = ()=> {
+  // focus cart panel (scroll)
+  document.getElementById('panel').scrollIntoView({behavior:'smooth'});
+};
+
+document.getElementById('checkoutBtn').onclick = ()=> checkout();
+document.getElementById('clearCart').onclick = ()=> { cart=[]; updateCartView(); updateCartCount(); };
+
+document.querySelectorAll('.voteBtn').forEach((b,i)=>{
+  b.onclick = ()=> voteFeature(['Auto stock alerts','WhatsApp ordering','Delivery tracking'][i], b);
+});
+
+document.getElementById('feedbackForm').onsubmit = (e)=> { e.preventDefault(); submitFeedback(e.target); };
+
+document.getElementById('downloadPdf').onclick = ()=>{
+  // produce a short PDF-like print (simple)
+  const specs = `Kwa Ntau • Retail Automation Brief\n\nProblems solved:\n- Automate WhatsApp orders\n- Low-stock alerts\n- M-Pesa integration\n\nNext steps: Discovery -> MVP -> Pilot\n`;
+  const w = window.open('','print');
+  w.document.write('<pre>'+specs+'</pre>'); w.print();
+};
+
+document.getElementById('bookBtn').onclick = (e)=> {
+  e.preventDefault();
+  if (CALENDLY_URL) window.open(CALENDLY_URL, '_blank');
+  else window.open(WHATSAPP_NUMBER, '_blank');
+};
+
+/* Theme toggle (light / dark demo) */
+let dark=false;
+document.getElementById('themeToggle').onclick = ()=>{
+  dark = !dark;
+  if(dark) document.documentElement.style.background='#0b1220', document.body.style.background='#071023', document.querySelectorAll('main,header,footer').forEach(n=> n.classList.add('text-white'));
+  else { document.documentElement.style.background=''; document.body.style.background=''; document.querySelectorAll('main,header,footer').forEach(n=> n.classList.remove('text-white')); }
+};
+
+/* initial render */
+renderProducts(); renderOrders(); renderInventory(); updateCartView(); initSalesChart(); updateCounts();
+
+/* Quick demo content */
+appendChat("Karibu! 👋 I'm the Kwa Ntau shop bot. Try 'stock' or 'add cement'.");
+</script>
 </body>
 </html>
